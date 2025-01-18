@@ -6,27 +6,25 @@
     <title>Login - Transceed Meet</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
     <script type="module" src="registe.js" defer></script>
 </head>
 <body>
-    
     <div class="container">
         <div class="form-box login">
             <form action="">
                 <h1>Login</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Username" required>
+                    <input type="email" id="login-email" placeholder="Email" required>
                     <i class="bx bxs-user"></i>
                 </div>
                 <div class="input-box">
-                    <input type="password" placeholder="Password" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
                     <i class="bx bxs-lock-alt"></i>
                 </div>
                 <div class="forgot-link">
                     <a href="#">Forgot password?</a>
                 </div>
-                <button type="submit" class="btn">Login</button>
+                <button type="submit" id="login-submit" class="btn">Login</button>
                 <p>or Login with Social Platforms</p>
                 <div class="social-icons">
                     <a href="#"><i class="bx bxl-google"></i></a>
@@ -35,7 +33,6 @@
                     <a href="#"><i class="bx bxl-linkedin"></i></a>
                 </div>
             </form>
-
         </div>
 
         <div class="form-box register">
@@ -46,14 +43,14 @@
                     <i class="bx bxs-user"></i>
                 </div>
                 <div class="input-box">
-                    <input type="email" placeholder="Email" required>
+                    <input type="email" id="register-email" placeholder="Email" required>
                     <i class="bx bxs-envelope"></i>
                 </div>
                 <div class="input-box">
-                    <input type="password" placeholder="Password" required>
+                    <input type="password" id="register-password" placeholder="Password" required>
                     <i class="bx bxs-lock-alt"></i>
                 </div>
-                <button type="submit" class="btn">Register</button>
+                <button type="submit" id="register-submit" class="btn">Register</button>
                 <p>or Register with Social Platforms</p>
                 <div class="social-icons">
                     <a href="#"><i class="bx bxl-google"></i></a>
@@ -62,7 +59,6 @@
                     <a href="#"><i class="bx bxl-linkedin"></i></a>
                 </div>
             </form>
-
         </div>
 
         <div class="toggle-box">
@@ -78,12 +74,6 @@
             </div>
         </div>
     </div>
-    
-
-
-
-
-
     <script src="script.js"></script>
 </body>
 </html>

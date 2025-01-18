@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Transceed Meet</title>
+    <title>Login - Transcend Meet</title>
     <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-
-    <script type="module" src="firebase.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-analytics-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script type="module" src="script.js"></script>
 </head>
 <body>
-    
     <div class="container">
         <div class="form-box login">
-            <form action="">
+            <form id="login-form">
                 <h1>Login</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Username" required>
+                    <input type="text" placeholder="Email" required>
                     <i class="bx bxs-user"></i>
                 </div>
                 <div class="input-box">
@@ -35,18 +36,13 @@
                     <a href="#"><i class="bx bxl-linkedin"></i></a>
                 </div>
             </form>
-
         </div>
 
         <div class="form-box register">
-            <form action="">
+            <form id="register-form">
                 <h1>Registration</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Username" required>
-                    <i class="bx bxs-user"></i>
-                </div>
-                <div class="input-box">
-                    <input type="email" placeholder="Email" required>
+                    <input type="text" placeholder="Email" required>
                     <i class="bx bxs-envelope"></i>
                 </div>
                 <div class="input-box">
@@ -62,7 +58,6 @@
                     <a href="#"><i class="bx bxl-linkedin"></i></a>
                 </div>
             </form>
-
         </div>
 
         <div class="toggle-box">
@@ -78,12 +73,5 @@
             </div>
         </div>
     </div>
-    
-
-
-
-
-
-    <script src="script.js"></script>
 </body>
 </html>

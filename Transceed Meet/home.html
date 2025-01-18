@@ -3,67 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Transceed Meet</title>
+    <title>Transceed Meet</title>
     <link rel="stylesheet" href="home.css">
+    <script src="home.js" defer></script>
 </head>
 <body>
     <header>
-        <nav>
-            <div class="logo">Transceed Meet</div>
-            <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#how-it-works">How It Works</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><a href="login.html" class="btn">Login</a></li>
-            </ul>
-        </nav>
+        <div class="container">
+            <nav>
+                <div class="logo">Transceed Meet</div>
+                <div class="burger" onclick="toggleMenu()">☰</div>
+                <ul class="nav-links" id="nav-links">
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#testimonials">Testimonials</a></li>
+                    <li><a href="#contact" class="btn">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
     </header>
 
     <section class="hero">
-        <div class="hero-content">
-            <h1>Welcome to Transceed Meet</h1>
-            <p>Seamless video conferencing for businesses, teams, and friends. Connect anytime, anywhere.</p>
-            <a href="signup.html" class="btn-primary">Get Started</a>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Collaborate Seamlessly</h1>
+                <p class="hero-description">
+                    A unified solution for video conferencing, chat, and collaboration.
+                </p>
+                <a href="#features" class="btn-primary">Get Started</a>
+            </div>
         </div>
     </section>
 
     <section id="features" class="features">
-        <h2>Features</h2>
-        <div class="features-grid">
-            <div class="feature">
-                <h3>HD Video & Audio</h3>
-                <p>Crystal clear video and audio quality to enhance your communication experience.</p>
-            </div>
-            <div class="feature">
-                <h3>Screen Sharing</h3>
-                <p>Share your screen for presentations, collaborations, or training sessions.</p>
-            </div>
-            <div class="feature">
-                <h3>Secure Meetings</h3>
-                <p>End-to-end encryption to keep your conversations private and secure.</p>
-            </div>
-            <div class="feature">
-                <h3>Multi-Device Support</h3>
-                <p>Join meetings from your desktop, tablet, or smartphone with ease.</p>
+        <div class="container">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <h3>Real-Time Chat</h3>
+                    <p>Message participants during the meeting.</p>
+                </div>
+                <div class="feature">
+                    <h3>File Sharing</h3>
+                    <p>Share documents and images securely.</p>
+                </div>
+                <div class="feature">
+                    <h3>Screen Sharing</h3>
+                    <p>Collaborate effectively with screen sharing tools.</p>
+                </div>
+                <div class="feature">
+                    <h3>Meeting Scheduler</h3>
+                    <p>Organize meetings effortlessly with scheduling tools.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <section id="how-it-works" class="how-it-works">
-        <h2>How It Works</h2>
-        <ol>
-            <li>Sign up or log in to your account.</li>
-            <li>Create or join a meeting with a unique link.</li>
-            <li>Invite participants and start collaborating instantly.</li>
-        </ol>
-    </section>
-
     <footer id="contact">
-        <div class="footer-content">
+        <div class="container">
             <h2>Contact Us</h2>
             <p>Email: support@transceedmeet.com</p>
             <p>Phone: +1-800-555-0199</p>
-            <p>&copy; 2025 Transceed Meet. All Rights Reserved.</p>
+            <div class="social-icons">
+                <a href="#"><img src="icons/facebook.svg" alt="Facebook"></a>
+                <a href="#"><img src="icons/twitter.svg" alt="Twitter"></a>
+                <a href="#"><img src="icons/linkedin.svg" alt="LinkedIn"></a>
+            </div>
         </div>
     </footer>
 </body>

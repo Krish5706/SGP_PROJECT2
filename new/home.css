@@ -1,0 +1,85 @@
+/* General reset */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+  }
+  
+  header {
+    background-color: #0078d7;
+    color: white;
+    padding: 20px 10%;
+    text-align: center;
+  }
+  
+  header h1 {
+    margin: 0;
+    font-size: 2.5em;
+  }
+  
+  nav {
+    margin-top: 10px;
+  }
+  
+  nav a {
+    color: white;
+    text-decoration: none;
+    margin: 0 10px;
+    font-weight: bold;
+  }
+  
+  nav a:hover {
+    text-decoration: underline;
+  }
+  
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  .hero {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  
+  .hero h2 {
+    font-size: 2em;
+  }
+  
+  .hero p {
+    margin-top: 10px;
+    font-size: 1.2em;
+  }
+  
+  .btn-group {
+    margin-top: 20px;
+  }
+  
+  button {
+    background-color: #0078d7;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1em;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  button:hover {
+    background-color: #005bb5;
+  }
+  
+  footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 10px 0;
+    margin-top: 30px;
+  }
+  

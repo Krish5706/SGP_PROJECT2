@@ -1,0 +1,55 @@
+.video-container {
+    position: relative;
+    width: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: #1a1a1a;
+  }
+  
+  .video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .video-label {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    padding: 0.25rem 0.75rem;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+  }
+  
+  .controls-container {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 2rem;
+  }
+  
+  .connection-status {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+  }
+  
+  .connection-status.connected {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: rgb(34, 197, 94);
+  }
+  
+  .connection-status.disconnected {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: rgb(239, 68, 68);
+  }

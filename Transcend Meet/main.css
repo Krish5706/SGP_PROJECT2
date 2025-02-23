@@ -17,6 +17,7 @@ body {
 /* ===================== Layout ===================== */
 .home-container {
     display: flex;
+    flex-wrap: wrap; /* Ensures responsiveness */
 }
 
 /* ===================== Sidebar ===================== */
@@ -26,12 +27,22 @@ body {
     color: white;
     height: 100vh;
     padding: 20px;
+    transition: all 0.3s ease;
 }
 
 /* Dark Mode Sidebar */
 .dark-mode .sidebar {
     background: #1E3F66; /* Dark Navy Blue */
     color: #B3CDE0; /* Soft Pastel Blue */
+}
+
+/* Responsive Sidebar */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
 }
 
 /* ===================== Logo ===================== */
@@ -66,12 +77,26 @@ body {
     padding: 20px;
 }
 
+/* Responsive Main Content */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px;
+    }
+}
+
 /* ===================== Top Navigation ===================== */
 .top-nav {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     padding: 10px;
+}
+
+/* Responsive Top Navigation */
+@media (max-width: 768px) {
+    .top-nav {
+        justify-content: center;
+    }
 }
 
 /* ===================== Buttons ===================== */
@@ -82,20 +107,20 @@ body {
     background: #0088CC; /* Professional Sky Blue */
     font-size: 16px;
     color: #FAF9F6;
-    border-radius: 20px; /* Rounded corners */
+    border-radius: 20px;
     transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); /* Soft shadow */
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Hover and Active Effects */
 .mode-toggle:hover, .nav-button:hover, .logout-button:hover {
     background: #006699; /* Deep Blue */
-    transform: translateY(-3px); /* Slight lift */
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 .mode-toggle:active, .nav-button:active, .logout-button:active {
-    transform: translateY(1px); /* Subtle press effect */
+    transform: translateY(1px);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -137,6 +162,7 @@ body {
     display: flex;
     justify-content: space-around;
     margin-top: 20px;
+    flex-wrap: wrap;
 }
 
 /* Action Cards */
@@ -146,19 +172,32 @@ body {
     border-radius: 10px;
     text-align: center;
     color: white;
+    margin-bottom: 10px;
 }
 
 /* Quick Action Colors */
-.orange { background: #00b9d3; } /* Elegant Orange */
-.blue { background:  #57c7db; } /* Vibrant Blue */
-.purple { background: #90d6e2; } /* Luxurious Purple */
-.amber { background: #b8e3ea; } /* Golden Amber */
+.orange { background: #00b9d3; } 
+.blue { background:  #57c7db; }
+.purple { background: #90d6e2; }
+.amber { background: #b8e3ea; }
 
 /* Dark Mode Action Cards */
-.dark-mode .orange { background: #528AAE; } /* Deep Burnt Orange */
-.dark-mode .blue { background: #73A5C6; } /* Muted Royal Blue */
-.dark-mode .purple { background: #91BAD6; } /* Regal Deep Purple */
-.dark-mode .amber { background: #BCD2E8; } /* Rich Gold */
+.dark-mode .orange { background: #528AAE; }
+.dark-mode .blue { background: #73A5C6; }
+.dark-mode .purple { background: #91BAD6; }
+.dark-mode .amber { background: #BCD2E8; }
+
+/* Responsive Quick Actions */
+@media (max-width: 768px) {
+    .quick-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    .action-card {
+        width: 100%;
+        max-width: 300px;
+    }
+}
 
 /* ===================== Profile Box ===================== */
 .profile-box {
@@ -169,6 +208,14 @@ body {
     padding: 20px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
     border-radius: 5px;
+}
+
+/* Responsive Profile Box */
+@media (max-width: 768px) {
+    .profile-box {
+        width: 90%;
+        right: 5%;
+    }
 }
 
 /* ===================== Hide Elements ===================== */

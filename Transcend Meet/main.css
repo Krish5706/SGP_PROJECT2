@@ -1,0 +1,149 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s ease;
+}
+
+.dark-mode  {
+    background: #121212;
+    color: white;
+}
+
+.home-container {
+    display: flex;
+}
+
+.sidebar {
+    width: 220px;
+    background: #2c3e50;
+    color: white;
+    height: 100vh;
+    padding: 20px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-menu {
+    margin-top: 20px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    color: white;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+.top-nav {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 10px;
+}
+
+.mode-toggle, .nav-button, .logout-button {
+    padding: 10px 15px;  /* Added horizontal padding for better appearance */
+    cursor: pointer;
+    border: none;
+    background: rgba(255, 255, 255, 0.7); /* Light Glass Effect */
+    font-size: 16px;
+    color: black;
+    border-radius: 20px; /* Rounded corners */
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); /* Soft shadow */
+}
+
+/* Hover Effect */
+.mode-toggle:hover, .nav-button:hover, .logout-button:hover {
+    background: rgba(255, 255, 255, 1); /* Brighter effect on hover */
+    transform: translateY(-3px); /* Slight lift */
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+}
+
+/* Active (Clicked) Effect */
+.mode-toggle:active, .nav-button:active, .logout-button:active {
+    transform: translateY(1px); /* Subtle press effect */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark Mode */
+.dark-mode .mode-toggle, 
+.dark-mode .nav-button, 
+.dark-mode .logout-button {
+    background: rgba(50, 50, 50, 0.7);
+    color: white;
+}
+
+.dark-mode .mode-toggle:hover, 
+.dark-mode .nav-button:hover, 
+.dark-mode .logout-button:hover {
+    background: rgba(100, 100, 100, 1);
+}
+
+
+.time-display {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.upcoming-badge {
+    background: #ff9800;
+    padding: 10px;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.current-time {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.quick-actions {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+
+.action-card {
+    width: 180px;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+}
+
+.orange { background: #ff9800; }
+.blue { background: #2196f3; }
+.purple { background: #9c27b0; }
+.amber { background: #ffc107; }
+
+.profile-box {
+    position: absolute;
+    top: 50px;
+    right: 20px;
+    background: white;
+    padding: 20px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+.hidden {
+    display: none;
+}

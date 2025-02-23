@@ -6,7 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transceed Meet</title>
     <link rel="stylesheet" href="home.css">
-    <script src="home.js" defer></script>
+    <script defer>
+        function toggleMenu() {
+            const navLinks = document.getElementById('nav-links');
+            navLinks.classList.toggle('active');
+        }
+    </script>
 </head>
 
 <body>
@@ -19,7 +24,7 @@
                     <li><a href="about.html">About</a></li>
                     <li><a href="#features">Features</a></li>
                     <li><a href="#testimonials">Meeting</a></li>
-                    <li><a href="login.html" class="btn">login</a></li>
+                    <li><a href="login.html" class="btn">Login</a></li>
                 </ul>
             </nav>
         </div>
@@ -32,7 +37,7 @@
                 <p class="hero-description">
                     A unified solution for video conferencing, chat, and collaboration.
                 </p>
-                <a href="#features" class="btn-primary">Get Started</a>
+                <a href="login.html" class="btn-primary">Get Started</a>
             </div>
         </div>
     </section>
@@ -66,6 +71,7 @@
                     <p>Collaborate visually with a real-time digital whiteboard for brainstorming and planning.</p>
                 </div>
             </div>
+        </div>
     </section>
 
     <footer>

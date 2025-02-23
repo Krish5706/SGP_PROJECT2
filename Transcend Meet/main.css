@@ -1,33 +1,47 @@
+/* ===================== General Styles ===================== */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    transition: background 0.3s ease;
+    transition: background 0.3s ease, color 0.3s ease;
+    background: #fbf9f4; /* Soft Grayish White */
+    color: #333333; /* Dark Charcoal */
 }
 
-.dark-mode  {
-    background: #121212;
-    color: white;
+/* Dark Mode */
+.dark-mode {
+    background: #181A1B; /* Deep Charcoal Black */
+    color: #EAEAEA; /* Soft White */
 }
 
+/* ===================== Layout ===================== */
 .home-container {
     display: flex;
 }
 
+/* ===================== Sidebar ===================== */
 .sidebar {
     width: 220px;
-    background: #2c3e50;
+    background: #38A6D9; /* Elegant Deep Blue */
     color: white;
     height: 100vh;
     padding: 20px;
 }
 
+/* Dark Mode Sidebar */
+.dark-mode .sidebar {
+    background: #1E3F66; /* Dark Navy Blue */
+    color: #B3CDE0; /* Soft Pastel Blue */
+}
+
+/* ===================== Logo ===================== */
 .logo-container {
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
+/* ===================== Navigation ===================== */
 .nav-menu {
     margin-top: 20px;
 }
@@ -43,14 +57,16 @@ body {
 }
 
 .nav-item:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.2); /* Hover Effect */
 }
 
+/* ===================== Main Content ===================== */
 .main-content {
     flex-grow: 1;
     padding: 20px;
 }
 
+/* ===================== Top Navigation ===================== */
 .top-nav {
     display: flex;
     justify-content: flex-end;
@@ -58,69 +74,72 @@ body {
     padding: 10px;
 }
 
+/* ===================== Buttons ===================== */
 .mode-toggle, .nav-button, .logout-button {
-    padding: 10px 15px;  /* Added horizontal padding for better appearance */
+    padding: 10px 15px;
     cursor: pointer;
     border: none;
-    background: rgba(255, 255, 255, 0.7); /* Light Glass Effect */
+    background: #0088CC; /* Professional Sky Blue */
     font-size: 16px;
-    color: black;
+    color: #FAF9F6;
     border-radius: 20px; /* Rounded corners */
     transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); /* Soft shadow */
 }
 
-/* Hover Effect */
+/* Hover and Active Effects */
 .mode-toggle:hover, .nav-button:hover, .logout-button:hover {
-    background: rgba(255, 255, 255, 1); /* Brighter effect on hover */
+    background: #006699; /* Deep Blue */
     transform: translateY(-3px); /* Slight lift */
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
 }
 
-/* Active (Clicked) Effect */
 .mode-toggle:active, .nav-button:active, .logout-button:active {
     transform: translateY(1px); /* Subtle press effect */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* Dark Mode */
+/* Dark Mode Buttons */
 .dark-mode .mode-toggle, 
 .dark-mode .nav-button, 
 .dark-mode .logout-button {
-    background: rgba(50, 50, 50, 0.7);
-    color: white;
+    background: #005F99; /* Muted Navy Blue */
 }
 
 .dark-mode .mode-toggle:hover, 
 .dark-mode .nav-button:hover, 
 .dark-mode .logout-button:hover {
-    background: rgba(100, 100, 100, 1);
+    background: #0088CC; /* Vibrant Sky Blue */
 }
 
-
+/* ===================== Time Display ===================== */
 .time-display {
     text-align: center;
     margin-top: 20px;
 }
 
+/* Upcoming Badge */
 .upcoming-badge {
-    background: #ff9800;
+    background: #38A6D9; /* Elegant Orange */
     padding: 10px;
     border-radius: 5px;
     display: inline-block;
 }
 
+/* Current Time */
 .current-time {
     font-size: 24px;
     font-weight: bold;
 }
 
+/* ===================== Quick Actions ===================== */
 .quick-actions {
     display: flex;
     justify-content: space-around;
     margin-top: 20px;
 }
 
+/* Action Cards */
 .action-card {
     width: 180px;
     padding: 20px;
@@ -129,11 +148,19 @@ body {
     color: white;
 }
 
-.orange { background: #ff9800; }
-.blue { background: #2196f3; }
-.purple { background: #9c27b0; }
-.amber { background: #ffc107; }
+/* Quick Action Colors */
+.orange { background: #00b9d3; } /* Elegant Orange */
+.blue { background:  #57c7db; } /* Vibrant Blue */
+.purple { background: #90d6e2; } /* Luxurious Purple */
+.amber { background: #b8e3ea; } /* Golden Amber */
 
+/* Dark Mode Action Cards */
+.dark-mode .orange { background: #528AAE; } /* Deep Burnt Orange */
+.dark-mode .blue { background: #73A5C6; } /* Muted Royal Blue */
+.dark-mode .purple { background: #91BAD6; } /* Regal Deep Purple */
+.dark-mode .amber { background: #BCD2E8; } /* Rich Gold */
+
+/* ===================== Profile Box ===================== */
 .profile-box {
     position: absolute;
     top: 50px;
@@ -144,6 +171,7 @@ body {
     border-radius: 5px;
 }
 
+/* ===================== Hide Elements ===================== */
 .hidden {
     display: none;
 }

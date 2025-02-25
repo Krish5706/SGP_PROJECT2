@@ -1,4 +1,3 @@
-
 // Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDIJU-d_089-5LvDdLN-5W-KHgIeXr254E",
@@ -39,7 +38,6 @@ document.getElementById('login-form').addEventListener('submit', (e) => {
 
     auth.signInWithEmailAndPassword(email, password)
         .then((userCredential) => {
-            alert('Login successful!');
             console.log('User Logged In:', userCredential.user);
             window.location.href = "./main.html"; // Redirect to main.html
         })

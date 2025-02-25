@@ -202,12 +202,42 @@ body {
 /* ===================== Profile Box ===================== */
 .profile-box {
     position: absolute;
-    top: 50px;
-    right: 20px;
-    background: white;
-    padding: 20px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    right: 30px;
+    padding: 8px;
+    width: 180px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: 'Arial', sans-serif;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
+}
+
+/* Profile Box Title */
+.profile-box h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+    color:#57c7db;
+}
+
+/* Profile Box Content */
+.profile-box p {
+    font-size: 1rem;
+    margin: 10px;
+}
+
+/* Buttons */
+.profile-box button {
+    top: 0px;
+    width: 100%;
+    padding: 10px 10px;
+    font-size: 1rem;
+    color: white;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border: none;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: transform 0.3s, background 0.3s;
 }
 
 /* Responsive Profile Box */

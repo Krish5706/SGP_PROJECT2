@@ -13,15 +13,17 @@
 </head>
 <body>
     <div class="container">
+        
+        <!-- Login Form -->
         <div class="form-box login">
             <form id="login-form">
                 <h1>Login</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Email" required>
+                    <input type="email" id="login-email" placeholder="Email" required>
                     <i class="bx bxs-user"></i>
                 </div>
                 <div class="input-box">
-                    <input type="password" placeholder="Password" required>
+                    <input type="password" id="login-password" placeholder="Password" required>
                     <i class="bx bxs-lock-alt"></i>
                 </div>
                 <div class="forgot-link">
@@ -38,15 +40,20 @@
             </form>
         </div>
 
+        <!-- Registration Form -->
         <div class="form-box register">
             <form id="register-form">
                 <h1>Registration</h1>
                 <div class="input-box">
-                    <input type="text" placeholder="Email" required>
+                    <input type="text" id="register-username" placeholder="Username" required>
+                    <i class="bx bxs-user"></i>
+                </div>
+                <div class="input-box">
+                    <input type="email" id="register-email" placeholder="Email" required>
                     <i class="bx bxs-envelope"></i>
                 </div>
                 <div class="input-box">
-                    <input type="password" placeholder="Password" required>
+                    <input type="password" id="register-password" placeholder="Password" required>
                     <i class="bx bxs-lock-alt"></i>
                 </div>
                 <button type="submit" class="btn">Register</button>
@@ -60,6 +67,7 @@
             </form>
         </div>
 
+        <!-- Toggle Between Forms -->
         <div class="toggle-box">
             <div class="toggle-panel toggle-left">
                 <h1>Hello, Welcome!</h1>
@@ -72,6 +80,7 @@
                 <button class="btn login-btn">Login</button>
             </div>
         </div>
+
     </div>
 </body>
 </html>

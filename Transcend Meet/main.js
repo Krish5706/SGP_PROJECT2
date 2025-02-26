@@ -98,7 +98,7 @@ function populateProfileBox() {
                             <div class="profile-detail">
                                 <p><strong>Name:</strong> ${user.displayName || userData.name || 'Not set'}</p>
                                 <p><strong>Email:</strong> ${user.email}</p>
-                            `;
+                        `;
                         
                         if (userData.phoneNumber) updatedHTML += `<p><strong>Phone:</strong> ${userData.phoneNumber}</p>`;
                         if (userData.organization) updatedHTML += `<p><strong>Organization:</strong> ${userData.organization}</p>`;
@@ -121,10 +121,10 @@ function populateProfileBox() {
                 })
                 .catch((error) => {
                     console.error("Error getting user document:", error);
-                    profileBox.innerHTML = profileHTML;
+                    profileBox.innerHTML = profileHTML; // Show fallback profile if error fetching from Firestore
                 });
         } else {
-            profileBox.innerHTML = profileHTML;
+            profileBox.innerHTML = profileHTML; // Fallback to Firebase Auth data if Firestore isn't available
         }
     } else {
         // User is not signed in - show guest profile

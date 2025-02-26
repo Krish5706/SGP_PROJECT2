@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - Transcend Meet</title>
 
+    <!-- Firebase SDK (add these before your main.js) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+
     <!-- Link to External CSS -->
     <link rel="stylesheet" href="main.css">
     
@@ -57,8 +62,7 @@
 
             <!-- Profile Box (Hidden by Default) -->
             <div id="profile-box" class="profile-box hidden">
-                <p>User Profile Details</p>
-                <button onclick="toggleProfileBox()">Close</button>
+                <!-- Content will be dynamically populated -->
             </div>
 
             <!-- Time Display Section -->

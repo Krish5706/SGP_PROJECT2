@@ -5,7 +5,7 @@ body {
     transition: background 0.3s ease;
 }
 
-.dark-mode  {
+.dark-mode {
     background: #121212;
     color: white;
 }
@@ -49,6 +49,7 @@ body {
 .main-content {
     flex-grow: 1;
     padding: 20px;
+    position: relative;
 }
 
 .top-nav {
@@ -59,27 +60,27 @@ body {
 }
 
 .mode-toggle, .nav-button, .logout-button {
-    padding: 10px 15px;  /* Added horizontal padding for better appearance */
+    padding: 10px 15px;
     cursor: pointer;
     border: none;
-    background: rgba(255, 255, 255, 0.7); /* Light Glass Effect */
+    background: rgba(255, 255, 255, 0.7);
     font-size: 16px;
     color: black;
-    border-radius: 20px; /* Rounded corners */
+    border-radius: 20px;
     transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1); /* Soft shadow */
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Hover Effect */
 .mode-toggle:hover, .nav-button:hover, .logout-button:hover {
-    background: rgba(255, 255, 255, 1); /* Brighter effect on hover */
-    transform: translateY(-3px); /* Slight lift */
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* Active (Clicked) Effect */
 .mode-toggle:active, .nav-button:active, .logout-button:active {
-    transform: translateY(1px); /* Subtle press effect */
+    transform: translateY(1px);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -96,7 +97,6 @@ body {
 .dark-mode .logout-button:hover {
     background: rgba(100, 100, 100, 1);
 }
-
 
 .time-display {
     text-align: center;
@@ -127,6 +127,13 @@ body {
     border-radius: 10px;
     text-align: center;
     color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
 }
 
 .orange { background: #ff9800; }
@@ -134,14 +141,94 @@ body {
 .purple { background: #9c27b0; }
 .amber { background: #ffc107; }
 
+/* Profile Box Styling */
 .profile-box {
     position: absolute;
-    top: 50px;
+    top: 60px;
     right: 20px;
     background: white;
     padding: 20px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    width: 300px;
+    z-index: 100;
+}
+
+.dark-mode .profile-box {
+    background: #2c2c2c;
+    color: white;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.profile-box h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    color: #2c3e50;
+}
+
+.dark-mode .profile-box h3 {
+    color: #f1f1f1;
+    border-bottom: 1px solid #444;
+}
+
+.profile-detail {
+    margin-bottom: 15px;
+}
+
+.profile-detail p {
+    margin: 8px 0;
+}
+
+.profile-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.profile-btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    background: #2196f3;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.profile-btn:hover {
+    background: #1976d2;
+}
+
+.logout-btn {
+    background: #f44336;
+}
+
+.logout-btn:hover {
+    background: #d32f2f;
+}
+
+.close-profile {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    background: #e0e0e0;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.close-profile:hover {
+    background: #ccc;
+}
+
+.dark-mode .close-profile {
+    background: #444;
+    color: white;
+}
+
+.dark-mode .close-profile:hover {
+    background: #555;
 }
 
 .hidden {

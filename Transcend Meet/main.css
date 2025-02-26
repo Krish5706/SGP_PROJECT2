@@ -8,16 +8,9 @@ body {
     color: #333333; /* Dark Charcoal */
 }
 
-<<<<<<< HEAD
 .dark-mode {
     background: #121212;
     color: white;
-=======
-/* Dark Mode */
-.dark-mode {
-    background: #181A1B; /* Deep Charcoal Black */
-    color: #EAEAEA; /* Soft White */
->>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
 }
 
 /* ===================== Layout ===================== */
@@ -111,15 +104,9 @@ body {
     padding: 10px 15px;
     cursor: pointer;
     border: none;
-<<<<<<< HEAD
     background: rgba(255, 255, 255, 0.7);
     font-size: 16px;
     color: black;
-=======
-    background: #0088CC; /* Professional Sky Blue */
-    font-size: 16px;
-    color: #FAF9F6;
->>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
     border-radius: 20px;
     transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
@@ -127,11 +114,7 @@ body {
 
 /* Hover and Active Effects */
 .mode-toggle:hover, .nav-button:hover, .logout-button:hover {
-<<<<<<< HEAD
     background: rgba(255, 255, 255, 1);
-=======
-    background: #006699; /* Deep Blue */
->>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
     transform: translateY(-3px);
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
 }
@@ -154,10 +137,6 @@ body {
     background: #0088CC; /* Vibrant Sky Blue */
 }
 
-<<<<<<< HEAD
-=======
-/* ===================== Time Display ===================== */
->>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
 .time-display {
     text-align: center;
     margin-top: 20px;
@@ -192,7 +171,6 @@ body {
     border-radius: 10px;
     text-align: center;
     color: white;
-<<<<<<< HEAD
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -200,9 +178,6 @@ body {
 .action-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-=======
-    margin-bottom: 10px;
->>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
 }
 
 /* Quick Action Colors */
@@ -211,7 +186,6 @@ body {
 .purple { background: #90d6e2; }
 .amber { background: #b8e3ea; }
 
-<<<<<<< HEAD
 /* Profile Box Styling */
 .profile-box {
     position: absolute;
@@ -300,36 +274,6 @@ body {
 
 .dark-mode .close-profile:hover {
     background: #555;
-=======
-/* Dark Mode Action Cards */
-.dark-mode .orange { background: #528AAE; }
-.dark-mode .blue { background: #73A5C6; }
-.dark-mode .purple { background: #91BAD6; }
-.dark-mode .amber { background: #BCD2E8; }
-
-/* Responsive Quick Actions */
-@media (max-width: 768px) {
-    .quick-actions {
-        flex-direction: column;
-        align-items: center;
-    }
-    .action-card {
-        width: 100%;
-        max-width: 300px;
-    }
-}
-
-/* ===================== Profile Box ===================== */
-.profile-box {
-    position: absolute;
-    right: 30px;
-    padding: 8px;
-    width: 180px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    font-family: 'Arial', sans-serif;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); 
->>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
 }
 
 /* Profile Box Title */

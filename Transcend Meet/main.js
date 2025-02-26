@@ -43,6 +43,7 @@ function setupProfileButton(user) {
     }
 }
 
+<<<<<<< HEAD
 // Profile Box Toggle with User Data
 function toggleProfileBox() {
     const profileBox = document.getElementById("profile-box");
@@ -168,6 +169,8 @@ function toggleDarkMode() {
     localStorage.setItem("darkMode", isDarkMode);
 }
 
+=======
+>>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
 // Display Current Time and Date
 function updateTime() {
     const timeElement = document.getElementById("current-time");
@@ -209,4 +212,61 @@ function scheduleMeeting() {
 function viewRecordings() {
     alert("Redirecting to meeting recordings...");
     // Implement logic to fetch and display recordings
+<<<<<<< HEAD
 }
+=======
+}
+
+// Logout Function
+function handleLogout() {
+    const confirmLogout = confirm("Are you sure you want to logout?");
+    if (confirmLogout) {
+        alert("Logging out...");
+        window.location.href = "login.html"; // Redirect to login page
+    }
+}
+
+// Ensure Firebase is initialized before using auth
+if (firebase && firebase.auth) {
+    firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+            updateUserProfile(user);
+        }
+    });
+} else {
+    console.error("Firebase is not initialized properly.");
+}
+
+// Function to update user profile details
+function updateUserProfile(user) {
+    const profileName = document.getElementById("profile-name");
+    const profileEmail = document.getElementById("profile-email");
+
+    if (profileName) profileName.textContent = user.displayName || "No Name";
+    if (profileEmail) profileEmail.textContent = user.email || "No Email";
+}
+
+// Function to toggle profile visibility
+function toggleProfileBox() {
+    const profileBox = document.getElementById("profile-box");
+    profileBox.classList.toggle("hidden");
+
+    const user = firebase.auth().currentUser;
+    
+    if (user) {
+        // Display user details
+        document.getElementById("profile-name").textContent = user.displayName || "No Name Provided";
+        document.getElementById("profile-email").textContent = user.email || "No Email Available";
+    } else {
+        console.error("No user is signed in.");
+    }
+}
+
+// Listen for authentication state change
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        document.getElementById("profile-name").textContent = user.displayName || "No Name Provided";
+        document.getElementById("profile-email").textContent = user.email || "No Email Available";
+    }
+});
+>>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500

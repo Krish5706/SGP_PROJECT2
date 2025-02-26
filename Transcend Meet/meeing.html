@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcend Meet</title>
+    <link rel="stylesheet" href="meeting.css">
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+    <div class="meeting-container">
+        <h1>Transcend Meet</h1>
+
+        <!-- Video Grid -->
+        <div class="video-grid" id="videoGrid">
+            <p class="placeholder-text">Video will appear here...</p>
+        </div>
+
+        <!-- Permission Buttons -->
+        <div class="permission-buttons">
+            <button class="btn" id="cameraBtn" onclick="toggleCamera()">
+                <i class="fas fa-video" id="cameraIcon"></i> Allow Camera
+            </button>
+            <button class="btn" id="microphoneBtn" onclick="toggleMicrophone()">
+                <i class="fas fa-microphone" id="microphoneIcon"></i> Allow Microphone
+            </button>
+        </div>
+
+        <!-- Meeting Controls -->
+        <div class="controls">
+            <p><strong>Meeting ID:</strong> <span id="meetingID">N/A</span></p>
+            <p><strong>Meeting Link:</strong> <input type="text" id="meetingLink" readonly></p>
+            <div class="buttons">
+                <button class="btn" onclick="copyMeetingLink()">Copy Link</button>
+                <button class="btn" onclick="startMeeting()">Start Meeting</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="meeting.js"></script>
+</body>
+</html>

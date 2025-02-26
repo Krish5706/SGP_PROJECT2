@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,13 +13,16 @@
 
     <!-- Link to External CSS -->
     <link rel="stylesheet" href="main.css">
-    
+
     <!-- Link to JavaScript -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
     <script src="main.js" defer></script>
 </head>
+
 <body>
     <div class="home-container">
-        
+
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="logo-container">
@@ -52,7 +56,7 @@
 
         <!-- Main Content Section -->
         <main class="main-content">
-            
+
             <!-- Top Navigation -->
             <header class="top-nav">
                 <button onclick="toggleDarkMode()" class="mode-toggle" aria-label="Toggle Dark Mode">🌙</button>
@@ -62,11 +66,18 @@
 
             <!-- Profile Box (Hidden by Default) -->
             <div id="profile-box" class="profile-box hidden">
+<<<<<<< HEAD
                 <!-- Content will be dynamically populated -->
+=======
+                <h2>Profile</h2>
+                <p><strong>Name:</strong> <span id="profile-name">Loading...</span></p>
+                <p><strong>Email:</strong> <span id="profile-email">Loading...</span></p>
+                <button onclick="toggleProfileBox()">Close</button>
+>>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
             </div>
 
             <!-- Time Display Section -->
-            <section class="time-display">
+            <section class="time-display">  
                 <div class="upcoming-badge">
                     <p>Upcoming Meeting at: <strong>12:30 PM</strong></p>
                 </div>
@@ -76,25 +87,29 @@
 
             <!-- Quick Actions Section -->
             <section class="quick-actions">
-                <div class="action-card orange" onclick="startNewMeeting()" role="button" tabindex="0" aria-label="Start a new meeting">
+                <div class="action-card orange" onclick="startNewMeeting()" role="button" tabindex="0"
+                    aria-label="Start a new meeting">
                     <span class="card-icon">➕</span>
                     <h3>New Meeting</h3>
                     <p>Start an instant meeting</p>
                 </div>
 
-                <div class="action-card blue" onclick="joinMeeting()" role="button" tabindex="0" aria-label="Join a meeting">
+                <div class="action-card blue" onclick="joinMeeting()" role="button" tabindex="0"
+                    aria-label="Join a meeting">
                     <span class="card-icon">👤</span>
                     <h3>Join Meeting</h3>
                     <p>via invitation link</p>
                 </div>
 
-                <div class="action-card purple" onclick="scheduleMeeting()" role="button" tabindex="0" aria-label="Schedule a meeting">
+                <div class="action-card purple" onclick="scheduleMeeting()" role="button" tabindex="0"
+                    aria-label="Schedule a meeting">
                     <span class="card-icon">📅</span>
                     <h3>Schedule Meeting</h3>
                     <p>Plan your meeting</p>
                 </div>
 
-                <div class="action-card amber" onclick="viewRecordings()" role="button" tabindex="0" aria-label="View recordings">
+                <div class="action-card amber" onclick="viewRecordings()" role="button" tabindex="0"
+                    aria-label="View recordings">
                     <span class="card-icon">🎞️</span>
                     <h3>View Recordings</h3>
                     <p>Meeting Recordings</p>
@@ -104,4 +119,8 @@
         </main>
     </div>
 </body>
+<<<<<<< HEAD
+=======
+
+>>>>>>> ec602ba63e9f35b9b2bd8fd605be729a55bcf500
 </html>

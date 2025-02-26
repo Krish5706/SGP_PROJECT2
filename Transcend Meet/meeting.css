@@ -1,0 +1,134 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Poppins, sans-serif;
+    text-align: center;
+}
+
+/* Body Styling */
+body {
+    background: linear-gradient(135deg, #f0f9ff, #cfd9df);
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+/* Meeting Container (Single Block) */
+.meeting-container {
+    width: 80%;
+    max-width: 600px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+/* Heading */
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+}
+
+/* Video Grid */
+.video-grid {
+    width: 100%;
+    height: 300px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.placeholder-text {
+    color: white;
+    font-size: 1.2rem;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 15px;
+    font-size: 1rem;
+    color: white;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: transform 0.3s, background 0.3s;
+    margin: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn i {
+    font-size: 1.2rem;
+}
+
+.btn:hover {
+    background: linear-gradient(90deg, #0056b3, #007bff);
+    transform: scale(1.1);
+}
+
+/* Permission Buttons */
+.permission-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Meeting Controls */
+.controls {
+    text-align: center;
+}
+
+.controls p {
+    font-size: 1rem;
+    margin: 5px 0;
+}
+
+.controls input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.buttons {
+    margin-top: 10px;
+}
+
+/* Video Box */
+.video-box {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-box video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .meeting-container {
+        width: 90%;
+    }
+
+    .video-grid {
+        height: 250px;
+    }
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Virtual Meeting Room</title>
+  <link rel="stylesheet" href="meetingroom.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script> 
+</head>
+<body>
+
+  <div class="meeting-container">
+    <!-- Video Grid -->
+    <div class="video-container" id="video-container"></div>
+
+    <!-- Controls at the bottom -->
+    <div class="controls-container">
+      <button class="control-btn" id="mic-toggle"><i class="fas fa-microphone"></i></button>
+      <button class="control-btn" id="cam-toggle"><i class="fas fa-video"></i></button>
+      <button class="control-btn" id="screen-share-toggle"><i class="fas fa-desktop"></i></button>
+      <button class="control-btn" id="end-call"><i class="fas fa-phone-slash"></i></button>
+      <button class="control-btn" id="grid-toggle"><i class="fas fa-th"></i></button>
+      <button class="control-btn" id="emoji-toggle"><i class="fas fa-smile"></i></button>
+    </div>
+
+    <!-- Reaction Emoji -->
+    <div class="reaction-container" id="reaction-container">
+      <button class="reaction-btn" id="reaction-emoji">😊</button>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel" id="chat-panel">
+      <div class="panel-header">
+        <h3>Chat</h3>
+        <button class="panel-close" id="close-chat">X</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-container">
+        <input type="text" id="chat-input" placeholder="Type a message...">
+        <button id="send-message">Send</button>
+      </div>
+    </div>
+
+    <!-- Whiteboard -->
+    <div class="whiteboard-container" id="whiteboard-container">
+      <canvas id="whiteboard-canvas"></canvas>
+    </div>
+
+    <!-- Latency Display -->
+    <div class="latency-display" id="latency-display"></div>
+  </div>
+
+  <script src="meetingroom.js"></script>
+</body>
+</html>

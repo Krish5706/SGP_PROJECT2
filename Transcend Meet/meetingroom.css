@@ -1,0 +1,126 @@
+/* Basic Layout */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.meeting-container {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.video-container {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  background-color: #333;
+  overflow: hidden;
+}
+
+.video-container video {
+  width: 100%;
+  max-width: 300px;
+  margin: 10px;
+}
+
+.controls-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.control-btn {
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  padding: 10px;
+  color: white;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 20px;
+  transition: background 0.3s ease;
+}
+
+.control-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.reaction-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
+.reaction-btn {
+  font-size: 2rem;
+  background: transparent;
+  border: none;
+  color: #f0f0f0;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.reaction-btn:hover {
+  color: #ffd700;
+}
+
+.chat-panel {
+  position: absolute;
+  bottom: 60px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border-radius: 10px;
+  padding: 10px;
+  width: 300px;
+  display: none; /* Hidden by default */
+}
+
+.chat-messages {
+  height: 150px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+
+.chat-input-container input {
+  width: 80%;
+  padding: 5px;
+}
+
+.chat-input-container button {
+  width: 18%;
+  padding: 5px;
+}
+
+.whiteboard-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  display: none; /* Hidden by default */
+}
+
+.whiteboard-container canvas {
+  width: 400px;
+  height: 300px;
+  border: 1px solid #ccc;
+}
+
+.latency-display {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 1.2rem;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 10px;
+  border-radius: 5px;
+}

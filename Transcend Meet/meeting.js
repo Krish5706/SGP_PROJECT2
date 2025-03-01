@@ -62,8 +62,13 @@ function startMeeting() {
     const meetingID = generateMeetingID();
     const meetingLink = `https://transcendmeet.com/join/${meetingID}`;
 
+    // Set the meeting ID and link in the UI
     document.getElementById("meetingID").innerText = meetingID;
     document.getElementById("meetingLink").value = meetingLink;
+
+    // Navigate to the meeting room page, passing the meeting ID via URL
+    // window.location.href = `meetingroom.html?meetingID=${meetingID}`;
+    window.location.href = "meetingroom.html";
 }
 
 // Function to copy the meeting link

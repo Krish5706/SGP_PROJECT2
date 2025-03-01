@@ -188,9 +188,9 @@ function navigateHome() {
     window.location.href = "home.html";
 }
 
+// Navigate to meeting.html
 function startNewMeeting() {
-    alert("Starting a new meeting...");
-    // Add logic to generate meeting link
+    window.location.href = 'meeting.html'; 
 }
 
 function joinMeeting() {

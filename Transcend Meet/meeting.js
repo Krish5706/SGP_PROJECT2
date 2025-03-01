@@ -12,22 +12,23 @@ function toggleCamera() {
     const cameraIcon = document.getElementById("cameraIcon");
 
     if (!cameraStream) {
+        // If the camera is not on, start the camera
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 cameraStream = stream;
                 addVideoStream(stream);
                 cameraIcon.classList.replace("fa-video", "fa-video-slash");
-                cameraBtn.innerHTML = '<i class="fas fa-video-slash"></i> Disable Camera';
+                cameraBtn.innerHTML = '<i class="fas fa-video-slash"></i> Disable Camera'; // Text for Disable
             })
             .catch(error => {
                 console.error("Camera access denied:", error);
-                alert("Please allow camera access.");
             });
     } else {
+        // If the camera is on, stop the camera
         stopMediaStream(cameraStream);
         cameraStream = null;
         cameraIcon.classList.replace("fa-video-slash", "fa-video");
-        cameraBtn.innerHTML = '<i class="fas fa-video"></i> Allow Camera';
+        cameraBtn.innerHTML = '<i class="fas fa-video"></i> Enable Camera'; // Text for Enable
     }
 }
 
@@ -37,21 +38,22 @@ function toggleMicrophone() {
     const microphoneIcon = document.getElementById("microphoneIcon");
 
     if (!microphoneStream) {
+        // If the microphone is not on, start the microphone
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
                 microphoneStream = stream;
                 microphoneIcon.classList.replace("fa-microphone", "fa-microphone-slash");
-                microphoneBtn.innerHTML = '<i class="fas fa-microphone-slash"></i> Disable Microphone';
+                microphoneBtn.innerHTML = '<i class="fas fa-microphone-slash"></i> Disable Microphone'; // Text for Disable
             })
             .catch(error => {
                 console.error("Microphone access denied:", error);
-                alert("Please allow microphone access.");
             });
     } else {
+        // If the microphone is on, stop the microphone
         stopMediaStream(microphoneStream);
         microphoneStream = null;
         microphoneIcon.classList.replace("fa-microphone-slash", "fa-microphone");
-        microphoneBtn.innerHTML = '<i class="fas fa-microphone"></i> Allow Microphone';
+        microphoneBtn.innerHTML = '<i class="fas fa-microphone"></i> Enable Microphone'; // Text for Enable
     }
 }
 
@@ -69,7 +71,6 @@ function copyMeetingLink() {
     const meetingLink = document.getElementById("meetingLink");
     meetingLink.select();
     document.execCommand("copy");
-    alert("Meeting link copied!");
 }
 
 // Function to add a video stream to the grid

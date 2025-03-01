@@ -41,12 +41,48 @@ h1 {
     background: rgba(0, 0, 0, 0.7);
     border-radius: 10px;
     display: flex;
+    flex-wrap: wrap; /* Allow wrapping if multiple videos */
     align-items: center;
     justify-content: center;
     overflow: hidden;
     margin-bottom: 15px;
+    position: relative;
 }
 
+/* Single Video Box */
+.video-box {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* If there are multiple videos, make them smaller and display in a grid */
+.video-box video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensure the video fits the container */
+    border-radius: 10px; /* Rounded corners for the video */
+}
+
+/* Flex Grid for Multiple Videos */
+.video-grid.multi-video {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Create flexible columns */
+    gap: 10px; /* Add space between videos */
+    height: auto; /* Adjust height based on content */
+}
+
+/* Responsive Layout for Small Screens */
+@media (max-width: 768px) {
+    .video-grid.multi-video {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); /* Smaller grid items */
+    }
+}
+
+/* Placeholder text (for when no video is available) */
 .placeholder-text {
     color: white;
     font-size: 1.2rem;
@@ -87,23 +123,28 @@ h1 {
 
 /* Meeting Controls */
 .controls {
-    text-align: center;
+    margin-top: 20px; /* Add some margin at the top */
 }
 
 .controls p {
+    text-align: left;
     font-size: 1rem;
     margin: 5px 0;
 }
 
 .controls input {
-    width: 100%;
+    width: 80%;
     padding: 8px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    text-align: center;
+    text-align: right; /* Align placeholder and text to the right */
 }
 
+/* Update the buttons container to keep them centered */
 .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
     margin-top: 10px;
 }
 

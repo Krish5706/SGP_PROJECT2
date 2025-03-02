@@ -7,12 +7,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const firebaseConfig = {
         apiKey: "AIzaSyDIJU-d_089-5LvDdLN-5W-KHgIeXr254E",
         authDomain: "transceed-meet-fd843.firebaseapp.com",
+        databaseURL: "https://transceed-meet-fd843-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "transceed-meet-fd843",
-        storageBucket: "transceed-meet-fd843.appspot.com",
+        storageBucket: "transceed-meet-fd843.firebasestorage.app",
         messagingSenderId: "927339188064",
         appId: "1:927339188064:web:73d8c9c843da15112f9805",
         measurementId: "G-TGKKF34QF9"
-    };
+      };
     
     // Check if Firebase is loaded
     if (typeof firebase !== 'undefined') {

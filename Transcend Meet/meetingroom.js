@@ -70,23 +70,58 @@ document.getElementById("reaction-emoji").addEventListener("click", () => {
 });
 
 // End Call
+// End Call
+// End Call
+// End Call with confirmation
 document.getElementById("end-call").addEventListener("click", () => {
-    stopStream(localStream);
-    stopStream(screenStream);
-    alert("Call Ended");
-    window.location.href = '/'; // Redirect after the call ends
+    const confirmLeave = confirm("Are you sure you want to leave the meeting?");
+    if (confirmLeave) {
+        stopStream(localStream);
+        stopStream(screenStream);
+        window.location.href = 'main.html'; // Redirect to main.html
+    }
+    // If the user clicks "Cancel", nothing happens and they stay in the meeting
 });
 
-// Send Chat Message
-document.getElementById("send-message").addEventListener("click", () => {
-    const message = document.getElementById("chat-input").value;
-    if (message) {
-        const messageElement = document.createElement("p");
-        messageElement.innerText = message;
-        document.getElementById("chat-messages").appendChild(messageElement);
-        document.getElementById("chat-input").value = "";
+
+const participantName = "You"; // Replace with actual participant name if dynamic
+
+// Send message on button click
+document.getElementById("send-message").addEventListener("click", sendMessage);
+
+// Send message on Enter key press
+document.getElementById("chat-input").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault(); // Prevent form submission or line break
+        sendMessage();
     }
 });
+
+// Send message function
+function sendMessage() {
+    const messageInput = document.getElementById("chat-input");
+    const message = messageInput.value.trim();
+
+    if (message !== "") {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        const messageElement = document.createElement("div");
+        messageElement.className = "chat-message";
+        messageElement.innerHTML = `
+            <strong>${participantName}</strong>
+            <span style="font-size: 0.8em; color: gray; margin-left: 5px;">${time}</span>
+            <div>${message}</div>
+        `;
+
+        const chatMessages = document.getElementById("chat-messages");
+        chatMessages.appendChild(messageElement);
+
+        messageInput.value = "";
+
+        // Auto-scroll to latest message
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+}
 
 // Close Chat Panel
 document.getElementById("close-chat").addEventListener("click", () => {
@@ -97,6 +132,7 @@ document.getElementById("close-chat").addEventListener("click", () => {
 document.getElementById("emoji-toggle").addEventListener("click", () => {
     document.getElementById("chat-panel").style.display = "block";
 });
+
 
 // Latency Display
 function showLatency() {

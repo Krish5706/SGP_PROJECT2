@@ -98,6 +98,22 @@ body {
   padding: 5px;
 }
 
+
+.chat-message {
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: black;
+  border-radius: 8px;
+  word-wrap: break-word;
+}
+
+.chat-time {
+  font-size: 0.8em;
+  color: gray;
+  margin-left: 5px;
+}
+
+
 .whiteboard-container {
   position: absolute;
   top: 20px;

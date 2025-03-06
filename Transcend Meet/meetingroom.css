@@ -829,3 +829,92 @@ body {
   background-color: rgba(255, 255, 255, 0.25);
   transform: scale(1.3);
 }
+/* Whiteboard container styling */
+.whiteboard-container {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 70%;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  display: none;
+  flex-direction: column;
+  z-index: 95;
+}
+
+.whiteboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  border-radius: 8px 8px 0 0;
+}
+
+.whiteboard-tools {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.tool-btn {
+  background: none;
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.tool-btn.active {
+  background-color: #2196F3;
+  color: white;
+}
+
+#color-picker {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+}
+
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 15px;
+  padding-left: 15px;
+  border-left: 1px solid #ddd;
+}
+
+#page-indicator {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+#whiteboard-canvas {
+  flex: 1;
+  background-color: white;
+  border-radius: 0 0 8px 8px;
+  cursor: crosshair;
+}
+
+/* Make sure the whiteboard container displays as flex when shown */
+.whiteboard-container[style*="display: block"] {
+  display: flex !important;
+}

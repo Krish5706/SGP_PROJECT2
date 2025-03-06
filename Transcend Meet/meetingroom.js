@@ -587,13 +587,24 @@ function toggleChatPanel() {
     document.getElementById('chat-toggle').classList.toggle('active');
 }
 
+// Toggle whiteboard visibility
 function toggleWhiteboard() {
-    togglePanel('whiteboard-container');
-    document.getElementById('whiteboard-toggle').classList.toggle('active');
+    const whiteboardContainer = document.getElementById('whiteboard-container');
+    if (!whiteboardContainer) return;
+    
     isWhiteboardActive = !isWhiteboardActive;
     
-    if (isWhiteboardActive && typeof initializeWhiteboard === 'function') {
-        initializeWhiteboard();
+    if (isWhiteboardActive) {
+        whiteboardContainer.style.display = 'flex'; // Use flex instead of block
+        document.getElementById('whiteboard-toggle').classList.add('active');
+        
+        // Initialize whiteboard after making it visible
+        setTimeout(() => {
+            initWhiteboard();
+        }, 100); // Short delay to ensure the container is visible first
+    } else {
+        whiteboardContainer.style.display = 'none';
+        document.getElementById('whiteboard-toggle').classList.remove('active');
     }
 }
 

@@ -1,4 +1,4 @@
-// Whiteboard functionality
+// Whiteboard variables
 let canvas;
 let ctx;
 let isDrawing = false;
@@ -64,8 +64,8 @@ function initializeWhiteboard() {
     if (colorPicker) {
         colorPicker.addEventListener('change', (e) => {
             currentColor = e.target.value;
-            if (currentTool === 'pen') {
-                // Only change to pen if color changes and current tool is eraser
+            if (currentTool === 'eraser') {
+                // Switch to pen when color changes
                 setTool('pen');
                 if (penTool) penTool.classList.add('active');
                 if (eraserTool) eraserTool.classList.remove('active');
@@ -80,7 +80,7 @@ function initializeWhiteboard() {
                 clearWhiteboardCanvas();
                 
                 // Notify other users about clear action
-                if (meetingID) {
+                if (typeof meetingID !== 'undefined' && meetingID) {
                     db.ref(`meetings/${meetingID}/whiteboard/cleared`).set({
                         timestamp: firebase.database.ServerValue.TIMESTAMP,
                         userId: currentUser.id
@@ -192,7 +192,7 @@ function draw(e) {
     drawBuffer.push(stroke);
     
     // Save stroke to Firebase
-    if (meetingID) {
+    if (typeof meetingID !== 'undefined' && meetingID) {
         saveStrokeToFirebase(stroke);
     }
     
@@ -233,6 +233,7 @@ function handleTouchMove(e) {
     e.preventDefault();
     draw(e);
 }
+
 // Save stroke to Firebase
 function saveStrokeToFirebase(stroke) {
     if (!meetingID) return;
@@ -387,6 +388,3 @@ function initWhiteboardWithExport() {
     // Setup listeners for real-time updates
     setupWhiteboardListeners();
 }
-
-// Call this function instead of initializeWhiteboard() for full functionality
-// initWhiteboardWithExport();

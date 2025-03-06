@@ -2,8 +2,8 @@
 const configuration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
+        { urls: 'stun:stun1.google.com:19302' },
+        { urls: 'stun:stun2.google.com:19302' }
     ]
 };
 
@@ -22,6 +22,7 @@ let peerConnections = {};
 let dataChannels = {};
 let isWhiteboardActive = false;
 let firebaseListenersActive = false;
+let isReactionPanelVisible = false;
 
 // Initialize meeting room when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -87,6 +88,7 @@ function setupEventListeners() {
     const whiteboardToggle = document.getElementById('whiteboard-toggle');
     const endCallBtn = document.getElementById('end-call');
     const copyMeetingInfoBtn = document.getElementById('copy-meeting-info');
+    const reactionToggle = document.getElementById('reaction-toggle');
 
     // Chat elements
     const sendMessageBtn = document.getElementById('send-message');
@@ -98,6 +100,17 @@ function setupEventListeners() {
     if (screenShareToggle) screenShareToggle.addEventListener('click', toggleScreenShare);
     if (endCallBtn) endCallBtn.addEventListener('click', endMeeting);
     if (copyMeetingInfoBtn) copyMeetingInfoBtn.addEventListener('click', copyMeetingInfo);
+    
+    // Panels toggle
+    if (participantsToggle) participantsToggle.addEventListener('click', toggleParticipantsPanel);
+    if (chatToggle) chatToggle.addEventListener('click', toggleChatPanel);
+    if (whiteboardToggle) whiteboardToggle.addEventListener('click', toggleWhiteboard);
+
+    // Reaction functionality
+    if (reactionToggle) reactionToggle.addEventListener('click', toggleReactionPanel);
+    
+    // Set up reaction buttons
+    setupReactionButtons();
 
     // Chat functionality
     if (sendMessageBtn) {
@@ -112,6 +125,15 @@ function setupEventListeners() {
             }
         });
     }
+    
+    // Close buttons for panels
+    const closeParticipants = document.getElementById('close-participants');
+    const closeChat = document.getElementById('close-chat');
+    const closeWhiteboard = document.getElementById('close-whiteboard');
+    
+    if (closeParticipants) closeParticipants.addEventListener('click', () => togglePanel('participants-panel', false));
+    if (closeChat) closeChat.addEventListener('click', () => togglePanel('chat-panel', false));
+    if (closeWhiteboard) closeWhiteboard.addEventListener('click', () => togglePanel('whiteboard-container', false));
 }
 
 // Start local media stream
@@ -123,7 +145,19 @@ function startLocalStream() {
             localVideo.srcObject = stream;
             localVideo.autoplay = true;
             localVideo.muted = true; // Mute the local video to prevent feedback
-            document.getElementById('video-container').appendChild(localVideo);
+            localVideo.classList.add('video-item');
+            
+            const videoWrapper = document.createElement('div');
+            videoWrapper.classList.add('video-wrapper');
+            videoWrapper.dataset.userId = currentUser.id;
+            
+            const nameTag = document.createElement('div');
+            nameTag.classList.add('video-name-tag');
+            nameTag.textContent = currentUser.name + ' (You)';
+            
+            videoWrapper.appendChild(localVideo);
+            videoWrapper.appendChild(nameTag);
+            document.getElementById('video-container').appendChild(videoWrapper);
 
             // Create peer connection for each participant
             connectToParticipants();
@@ -149,7 +183,9 @@ function connectToMeeting() {
                 name: currentUser.name,
                 isOnline: true,
                 joinedAt: firebase.database.ServerValue.TIMESTAMP,
-                isHost: currentUser.isHost
+                isHost: currentUser.isHost,
+                hasAudio: true,
+                hasVideo: true
             });
         })
         .then(() => {
@@ -160,6 +196,45 @@ function connectToMeeting() {
             alert("Error: " + error.message);
             window.location.href = "meeting.html";
         });
+}
+
+// Setup Firebase listeners
+function setupFirebaseListeners() {
+    if (firebaseListenersActive) return;
+    
+    // Listen for participant changes
+    db.ref(`meetings/${meetingID}/participants`).on('value', snapshot => {
+        const participantsData = snapshot.val() || {};
+        updateParticipantsList(participantsData);
+    });
+    
+    // Listen for chat messages
+    db.ref(`meetings/${meetingID}/messages`).on('child_added', snapshot => {
+        const message = snapshot.val();
+        displayChatMessage(message);
+    });
+    
+    // Listen for reactions
+    db.ref(`meetings/${meetingID}/reactions`).on('child_added', snapshot => {
+        const reaction = snapshot.val();
+        displayReaction(reaction);
+        
+        // Remove reaction data after displaying
+        snapshot.ref.remove();
+    });
+    
+    // Listen for meeting status changes
+    db.ref(`meetings/${meetingID}/active`).on('value', snapshot => {
+        if (snapshot.exists() && snapshot.val() === false && !currentUser.isHost) {
+            alert("The meeting has been ended by the host.");
+            cleanupAndRedirect();
+        }
+    });
+    
+    // Set online status when disconnecting
+    db.ref(`meetings/${meetingID}/participants/${currentUser.id}/isOnline`).onDisconnect().set(false);
+    
+    firebaseListenersActive = true;
 }
 
 // Toggle Microphone
@@ -218,11 +293,23 @@ function toggleScreenShare() {
                 const screenVideo = document.createElement('video');
                 screenVideo.srcObject = stream;
                 screenVideo.autoplay = true;
-                document.getElementById('video-container').appendChild(screenVideo);
+                screenVideo.classList.add('screen-share');
+                
+                const videoWrapper = document.createElement('div');
+                videoWrapper.classList.add('video-wrapper', 'screen-share-wrapper');
+                videoWrapper.dataset.userId = `screen_${currentUser.id}`;
+                
+                const nameTag = document.createElement('div');
+                nameTag.classList.add('video-name-tag');
+                nameTag.textContent = `${currentUser.name}'s Screen`;
+                
+                videoWrapper.appendChild(screenVideo);
+                videoWrapper.appendChild(nameTag);
+                document.getElementById('video-container').appendChild(videoWrapper);
 
                 const screenShareToggle = document.getElementById('screen-share-toggle');
                 if (screenShareToggle) {
-                    screenShareToggle.innerHTML = `<i class="fas fa-desktop-slash"></i>`;
+                    screenShareToggle.innerHTML = `<i class="fas fa-stop-circle"></i>`;
                 }
 
                 // Notify Firebase that screen sharing is active
@@ -234,7 +321,10 @@ function toggleScreenShare() {
                 });
 
                 // Stop screen sharing when the stream ends
-                stream.getVideoTracks()[0].onended = toggleScreenShare;
+                stream.getVideoTracks()[0].onended = () => {
+                    videoWrapper.remove();
+                    toggleScreenShare();
+                };
             })
             .catch(error => {
                 console.error("Error sharing screen:", error);
@@ -285,8 +375,11 @@ function sendChatMessage() {
 // Display chat message in the chat area
 function displayChatMessage(message) {
     const chatMessages = document.getElementById('chat-messages');
+    if (!chatMessages) return;
+    
     const messageElement = document.createElement('div');
     messageElement.className = 'chat-message';
+    messageElement.classList.add(message.userId === currentUser.id ? 'own-message' : 'other-message');
 
     const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     messageElement.innerHTML = `
@@ -352,6 +445,8 @@ function cleanupAndRedirect() {
     if (firebaseListenersActive) {
         db.ref(`meetings/${meetingID}/participants`).off();
         db.ref(`meetings/${meetingID}/messages`).off();
+        db.ref(`meetings/${meetingID}/reactions`).off();
+        db.ref(`meetings/${meetingID}/active`).off();
         firebaseListenersActive = false;
     }
 
@@ -402,10 +497,7 @@ function updateParticipantsList(participantsData) {
     const participantsList = document.getElementById("participants-list");
     const participantCount = document.getElementById("participant-count");
 
-    if (!participantsList || !participantCount) {
-        console.error("Participants list elements not found");
-        return;
-    }
+    if (!participantsList || !participantCount) return;
 
     // Clear current list
     participantsList.innerHTML = "";
@@ -430,10 +522,10 @@ function updateParticipantsList(participantsData) {
         statusIcons.className = "participant-status-icons";
 
         const micIcon = document.createElement("i");
-        micIcon.className = participant.hasAudio ? "fas fa-microphone" : "fas fa-microphone-slash";
+        micIcon.className = participant.hasAudio !== false ? "fas fa-microphone" : "fas fa-microphone-slash";
 
         const videoIcon = document.createElement("i");
-        videoIcon.className = participant.hasVideo ? "fas fa-video" : "fas fa-video-slash";
+        videoIcon.className = participant.hasVideo !== false ? "fas fa-video" : "fas fa-video-slash";
 
         const onlineStatus = document.createElement("span");
         onlineStatus.className = "online-status";
@@ -456,13 +548,198 @@ function updateParticipantsList(participantsData) {
 // Update connection status UI
 function updateConnectionStatus(isConnected) {
     const connectionStatus = document.getElementById('connection-status');
+    if (!connectionStatus) return;
+    
     const statusIndicator = connectionStatus.querySelector('.status-indicator');
 
     if (isConnected) {
         connectionStatus.style.display = 'flex';
         statusIndicator.classList.remove('disconnected');
+        connectionStatus.querySelector('span').textContent = 'Connected';
     } else {
-        connectionStatus.style.display = 'none';
+        connectionStatus.style.display = 'flex';
         statusIndicator.classList.add('disconnected');
+        connectionStatus.querySelector('span').textContent = 'Disconnected';
+    }
+}
+
+// Toggle panels functions
+function togglePanel(panelId, show) {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    
+    if (show === undefined) {
+        // Toggle visibility
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    } else {
+        // Set visibility explicitly
+        panel.style.display = show ? 'block' : 'none';
+    }
+}
+
+function toggleParticipantsPanel() {
+    togglePanel('participants-panel');
+    document.getElementById('participants-toggle').classList.toggle('active');
+}
+
+function toggleChatPanel() {
+    togglePanel('chat-panel');
+    document.getElementById('chat-toggle').classList.toggle('active');
+}
+
+function toggleWhiteboard() {
+    togglePanel('whiteboard-container');
+    document.getElementById('whiteboard-toggle').classList.toggle('active');
+    isWhiteboardActive = !isWhiteboardActive;
+    
+    if (isWhiteboardActive && typeof initializeWhiteboard === 'function') {
+        initializeWhiteboard();
+    }
+}
+
+// REACTION FUNCTIONALITY
+// -----------------------
+
+// Toggle reaction panel
+function toggleReactionPanel() {
+    const reactionPanel = document.getElementById('reaction-panel');
+    if (!reactionPanel) return;
+    
+    isReactionPanelVisible = !isReactionPanelVisible;
+    reactionPanel.style.display = isReactionPanelVisible ? 'flex' : 'none';
+    document.getElementById('reaction-toggle').classList.toggle('active', isReactionPanelVisible);
+}
+
+// Setup reaction buttons
+function setupReactionButtons() {
+    const reactionButtons = document.querySelectorAll('.reaction-btn');
+    
+    reactionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const emoji = button.getAttribute('data-emoji');
+            if (emoji) {
+                sendReaction(emoji);
+                toggleReactionPanel(); // Hide panel after selecting
+            }
+        });
+    });
+}
+
+// Send reaction to Firebase
+function sendReaction(emoji) {
+    if (!meetingID || !currentUser.id) return;
+    
+    const reaction = {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        emoji: emoji,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    
+    db.ref(`meetings/${meetingID}/reactions`).push(reaction)
+        .catch(error => {
+            console.error("Error sending reaction:", error);
+        });
+}
+
+// Display reaction on screen
+// Display reaction on screen with enhanced animation
+function displayReaction(reaction) {
+    // Create reaction container element
+    const reactionContainer = document.createElement('div');
+    reactionContainer.className = 'reaction-container';
+    
+    // Create emoji element
+    const emojiElement = document.createElement('div');
+    emojiElement.className = 'reaction-emoji';
+    emojiElement.textContent = reaction.emoji;
+    
+    // Create user label (optional - shows briefly who sent it)
+    const userLabel = document.createElement('div');
+    userLabel.className = 'reaction-user';
+    userLabel.textContent = reaction.userName;
+    
+    // Add elements to container
+    reactionContainer.appendChild(emojiElement);
+    reactionContainer.appendChild(userLabel);
+    
+    // Get the video container for positioning
+    const videoContainer = document.getElementById('video-container');
+    if (!videoContainer) return;
+    
+    const containerRect = videoContainer.getBoundingClientRect();
+    
+    // Position reaction horizontally at a random position
+    const posX = Math.random() * (containerRect.width - 80) + 40; // Keep away from edges
+    
+    // Start from bottom of the container
+    reactionContainer.style.left = `${posX}px`;
+    reactionContainer.style.bottom = '0';
+    
+    // Add some randomization to make multiple reactions look natural
+    const duration = 3 + Math.random() * 2; // 3-5 seconds duration
+    const delay = Math.random() * 0.5; // 0-0.5 second delay
+    const horizontalMovement = (Math.random() * 100) - 50; // -50px to +50px horizontal drift
+    
+    // Set custom properties for animation
+    reactionContainer.style.setProperty('--duration', `${duration}s`);
+    reactionContainer.style.setProperty('--delay', `${delay}s`);
+    reactionContainer.style.setProperty('--h-movement', `${horizontalMovement}px`);
+    
+    // Append to container
+    videoContainer.appendChild(reactionContainer);
+    
+    // Remove after animation completes
+    setTimeout(() => {
+        if (reactionContainer && reactionContainer.parentNode) {
+            reactionContainer.parentNode.removeChild(reactionContainer);
+        }
+    }, (duration + delay) * 1000);
+}
+
+// Send reaction to Firebase
+function sendReaction(emoji) {
+    if (!meetingID || !currentUser.id) return;
+    
+    const reaction = {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        emoji: emoji,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+    
+    // Also display the reaction locally for immediate feedback
+    displayReaction(reaction);
+    
+    // Send to Firebase for other participants
+    db.ref(`meetings/${meetingID}/reactions`).push(reaction)
+        .catch(error => {
+            console.error("Error sending reaction:", error);
+        });
+}
+
+// // Animate reaction on screen
+// function animateReaction(element) {
+//     // Apply CSS animation
+//     element.style.animation = 'float-up 4s ease-out forwards, fade-out 4s ease-out forwards';
+    
+//     // Add some random rotation
+//     const rotation = Math.random() * 40 - 20; // -20 to +20 degrees
+//     element.style.transform = `rotate(${rotation}deg)`;
+// }
+
+// Connect to participants (WebRTC)
+function connectToParticipants() {
+    // This would implement the WebRTC peer connection logic
+    // For simplicity in this demo, we're focusing on the reaction functionality
+    console.log("WebRTC connection functionality would be implemented here");
+}
+
+// Add function to initialize whiteboard if not present
+function initializeWhiteboard() {
+    if (typeof initWhiteboard === 'function') {
+        initWhiteboard();
+    } else {
+        console.log("Whiteboard functionality not available");
     }
 }

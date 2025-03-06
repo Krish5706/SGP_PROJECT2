@@ -5,51 +5,103 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Virtual Meeting Room</title>
   <link rel="stylesheet" href="meetingroom.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script> 
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  
+  <!-- WebRTC adapter for browser compatibility -->
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 </head>
 <body>
 
   <div class="meeting-container">
-    <!-- Video Grid -->
-    <div class="video-container" id="video-container"></div>
+    <div class="meeting-header">
+      <h2>Meeting: <span id="meeting-id-display">Loading...</span></h2>
+      <button class="btn" id="copy-meeting-info">Copy Meeting Info</button>
+    </div>
+
+    <div class="main-content">
+      <!-- Video Grid -->
+      <div class="video-container" id="video-container">
+        <!-- Videos will be added here dynamically -->
+      </div>
+
+      <!-- Participants List -->
+      <div class="participants-panel" id="participants-panel">
+        <div class="panel-header">
+          <h3>Participants (<span id="participant-count">0</span>)</h3>
+          <button class="panel-close" id="close-participants">X</button>
+        </div>
+        <div class="participants-list" id="participants-list">
+          <!-- Participants will be listed here -->
+        </div>
+      </div>
+
+      <!-- Chat Panel -->
+      <div class="chat-panel" id="chat-panel">
+        <div class="panel-header">
+          <h3>Chat</h3>
+          <button class="panel-close" id="close-chat">X</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <!-- Chat messages will appear here -->
+        </div>
+        <div class="chat-input-container">
+          <input type="text" id="chat-input" placeholder="Type a message...">
+          <button id="send-message">Send</button>
+        </div>
+      </div>
+
+      <!-- Whiteboard -->
+      <div class="whiteboard-container" id="whiteboard-container">
+        <div class="whiteboard-header">
+          <h3>Whiteboard</h3>
+          <div class="whiteboard-tools">
+            <button class="tool-btn active" id="pen-tool"><i class="fas fa-pen"></i></button>
+            <button class="tool-btn" id="eraser-tool"><i class="fas fa-eraser"></i></button>
+            <input type="color" id="color-picker" value="#000000">
+            <button class="tool-btn" id="clear-whiteboard"><i class="fas fa-trash"></i></button>
+            <button class="panel-close" id="close-whiteboard">X</button>
+          </div>
+        </div>
+        <canvas id="whiteboard-canvas"></canvas>
+      </div>
+    </div>
 
     <!-- Controls at the bottom -->
     <div class="controls-container">
       <button class="control-btn" id="mic-toggle"><i class="fas fa-microphone"></i></button>
       <button class="control-btn" id="cam-toggle"><i class="fas fa-video"></i></button>
       <button class="control-btn" id="screen-share-toggle"><i class="fas fa-desktop"></i></button>
-      <button class="control-btn" id="end-call"><i class="fas fa-phone-slash"></i></button>
+      <button class="control-btn" id="participants-toggle"><i class="fas fa-users"></i></button>
+      <button class="control-btn" id="chat-toggle"><i class="fas fa-comment"></i></button>
+      <button class="control-btn" id="whiteboard-toggle"><i class="fas fa-chalkboard"></i></button>
       <button class="control-btn" id="grid-toggle"><i class="fas fa-th"></i></button>
-      <button class="control-btn" id="emoji-toggle"><i class="fas fa-smile"></i></button>
+      <button class="control-btn" id="reaction-toggle"><i class="fas fa-smile"></i></button>
+      <button class="control-btn end-call" id="end-call"><i class="fas fa-phone-slash"></i></button>
     </div>
 
-    <!-- Reaction Emoji -->
-    <div class="reaction-container" id="reaction-container">
-      <button class="reaction-btn" id="reaction-emoji">😊</button>
+    <!-- Reaction Emoji Panel -->
+    <div class="reaction-panel" id="reaction-panel">
+      <button class="reaction-btn" data-emoji="👍">👍</button>
+      <button class="reaction-btn" data-emoji="👏">👏</button>
+      <button class="reaction-btn" data-emoji="🎉">🎉</button>
+      <button class="reaction-btn" data-emoji="❤️">❤️</button>
+      <button class="reaction-btn" data-emoji="😂">😂</button>
+      <button class="reaction-btn" data-emoji="😮">😮</button>
     </div>
 
-    <!-- Chat Panel -->
-    <div class="chat-panel" id="chat-panel">
-      <div class="panel-header">
-        <h3>Chat</h3>
-        <button class="panel-close" id="close-chat">X</button>
-      </div>
-      <div class="chat-messages" id="chat-messages"></div>
-      <div class="chat-input-container">
-        <input type="text" id="chat-input" placeholder="Type a message...">
-        <button id="send-message">Send</button>
-      </div>
+    <!-- Connection status -->
+    <div class="connection-status" id="connection-status">
+      <div class="status-indicator"></div>
+      <span>Connected</span>
     </div>
-
-    <!-- Whiteboard -->
-    <div class="whiteboard-container" id="whiteboard-container">
-      <canvas id="whiteboard-canvas"></canvas>
-    </div>
-
-    <!-- Latency Display -->
-    <div class="latency-display" id="latency-display"></div>
   </div>
 
+  <script src="firebase-config.js"></script>
+  <script src="whiteboard.js"></script>
   <script src="meetingroom.js"></script>
 </body>
 </html>

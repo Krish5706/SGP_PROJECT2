@@ -3,40 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcend Meet</title>
+    <title>Start or Join Meeting</title>
     <link rel="stylesheet" href="meeting.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 <body>
-
     <div class="meeting-container">
-        <h1>Transcend Meet</h1>
-
-        <!-- Video Grid -->
+        <h1>Virtual Meeting</h1>
+        
         <div class="video-grid" id="videoGrid">
-            <p class="placeholder-text">Video will appear here...</p>
+            <div class="placeholder-text">Camera preview will appear here</div>
         </div>
-
-        <!-- Permission Buttons -->
+        
         <div class="permission-buttons">
-            <button class="btn" id="cameraBtn" onclick="toggleCamera()">
-                <i class="fas fa-video" id="cameraIcon"></i> Allow Camera
+            <button class="btn" id="cameraBtn">
+                <i class="fas fa-video" id="cameraIcon"></i> Enable Camera
             </button>
-            <button class="btn" id="microphoneBtn" onclick="toggleMicrophone()">
-                <i class="fas fa-microphone" id="microphoneIcon"></i> Allow Microphone
+            <button class="btn" id="microphoneBtn">
+                <i class="fas fa-microphone" id="microphoneIcon"></i> Enable Microphone
             </button>
         </div>
-
-        <!-- Meeting Controls -->
+        
         <div class="controls">
-            <p><strong>Meeting ID:</strong> <span id="meetingID">N/A</span></p>
-            <p><strong>Meeting Link:</strong> <input type="text" id="meetingLink" readonly></p>
+            <p>Enter your name:</p>
+            <input type="text" id="userName" placeholder="Your Name" value="Guest">
+            
             <div class="buttons">
-                <button class="btn" onclick="copyMeetingLink()">Copy Link</button>
-                <button class="btn" onclick="startMeeting()">Start Meeting</button>
+                <button class="btn" id="startMeetingBtn">
+                    <i class="fas fa-plus-circle"></i> Start New Meeting
+                </button>
+                <button class="btn" id="joinMeetingBtn">
+                    <i class="fas fa-sign-in-alt"></i> Join Meeting
+                </button>
             </div>
         </div>
+        
+        <div id="startMeetingInfo" style="display: none;" class="meeting-info">
+            <h3>Meeting Created!</h3>
+            <p>Meeting ID: <span id="meetingID"></span></p>
+            <div class="copy-link">
+                <input type="text" id="meetingLink" readonly>
+                <button class="btn" id="copyLinkBtn">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+            <button class="btn primary-btn" id="enterMeetingBtn">
+                <i class="fas fa-door-open"></i> Enter Meeting
+            </button>
+        </div>
+        
+        <div id="joinMeetingForm" style="display: none;" class="join-meeting-form">
+            <h3>Join Meeting</h3>
+            <input type="text" id="joinMeetingID" placeholder="Enter Meeting ID">
+            <input type="text" id="participantName" placeholder="Your Name" value="Guest">
+            <button class="btn primary-btn" id="joinExistingMeetingBtn">
+                <i class="fas fa-sign-in-alt"></i> Join Now
+            </button>
+        </div>
     </div>
-
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <!-- WebRTC adapter for browser compatibility -->
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    
+    <!-- Your Firebase config -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Meeting script -->
     <script src="meeting.js"></script>
 </body>
 </html>

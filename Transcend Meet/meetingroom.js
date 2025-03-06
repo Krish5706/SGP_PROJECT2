@@ -1,156 +1,468 @@
+// WebRTC configuration
+const configuration = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
+    ]
+};
+
+// Meeting variables
 let localStream;
 let screenStream;
 let isVideoGrid = true;
-let latencyInterval;
+let meetingID;
+let currentUser = {
+    id: null,
+    name: "Guest",
+    isHost: false
+};
+let participants = {};
+let peerConnections = {};
+let dataChannels = {};
+let isWhiteboardActive = false;
+let firebaseListenersActive = false;
 
-// Start Local Camera Stream
+// Initialize meeting room when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM loaded, initializing meeting room...");
+    initMeetingRoom();
+    
+    // Set up UI event listeners
+    setupEventListeners();
+});
+
+// Initialize meeting room
+function initMeetingRoom() {
+    console.log("Initializing meeting room...");
+    
+    // Get meeting ID from URL or session storage
+    const urlParams = new URLSearchParams(window.location.search);
+    meetingID = urlParams.get('id') || sessionStorage.getItem('meetingID');
+    
+    if (!meetingID) {
+        alert("Invalid meeting. Redirecting to home page.");
+        window.location.href = "meeting.html";
+        return;
+    }
+    
+    // Get user information from session storage
+    currentUser.id = sessionStorage.getItem('userID');
+    currentUser.name = sessionStorage.getItem('userName') || "Guest";
+    currentUser.isHost = sessionStorage.getItem('isHost') === 'true';
+    
+    if (!currentUser.id) {
+        // Generate random user ID if not available
+        currentUser.id = 'user_' + Math.random().toString(36).substring(2, 10);
+        sessionStorage.setItem('userID', currentUser.id);
+    }
+    
+    // Display meeting ID
+    const meetingIdDisplay = document.getElementById('meeting-id-display');
+    if (meetingIdDisplay) {
+        meetingIdDisplay.textContent = meetingID;
+    }
+    
+    // Start local stream
+    startLocalStream();
+    
+    // Connect to Firebase
+    connectToMeeting();
+    
+    // Initialize whiteboard (if applicable)
+    initializeWhiteboard();
+    
+    // Update connection status
+    updateConnectionStatus(true);
+}
+
+// Set up UI event listeners
+function setupEventListeners() {
+    // Control buttons
+    const micToggle = document.getElementById('mic-toggle');
+    const camToggle = document.getElementById('cam-toggle');
+    const screenShareToggle = document.getElementById('screen-share-toggle');
+    const participantsToggle = document.getElementById('participants-toggle');
+    const chatToggle = document.getElementById('chat-toggle');
+    const whiteboardToggle = document.getElementById('whiteboard-toggle');
+    const endCallBtn = document.getElementById('end-call');
+    const copyMeetingInfoBtn = document.getElementById('copy-meeting-info');
+
+    // Chat elements
+    const sendMessageBtn = document.getElementById('send-message');
+    const chatInput = document.getElementById('chat-input');
+
+    // Add event listeners
+    if (micToggle) micToggle.addEventListener('click', toggleMicrophone);
+    if (camToggle) camToggle.addEventListener('click', toggleCamera);
+    if (screenShareToggle) screenShareToggle.addEventListener('click', toggleScreenShare);
+    if (endCallBtn) endCallBtn.addEventListener('click', endMeeting);
+    if (copyMeetingInfoBtn) copyMeetingInfoBtn.addEventListener('click', copyMeetingInfo);
+
+    // Chat functionality
+    if (sendMessageBtn) {
+        sendMessageBtn.addEventListener('click', sendChatMessage);
+    }
+
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+    }
+}
+
+// Start local media stream
 function startLocalStream() {
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
         .then(stream => {
             localStream = stream;
-            const videoElement = document.createElement("video");
-            videoElement.srcObject = stream;
-            videoElement.autoplay = true;
-            videoElement.id = "local-video";
-            document.getElementById("video-container").appendChild(videoElement);
+            const localVideo = document.createElement('video');
+            localVideo.srcObject = stream;
+            localVideo.autoplay = true;
+            localVideo.muted = true; // Mute the local video to prevent feedback
+            document.getElementById('video-container').appendChild(localVideo);
+
+            // Create peer connection for each participant
+            connectToParticipants();
         })
-        .catch(error => console.error("Error accessing camera and microphone:", error));
+        .catch(error => {
+            console.error("Error accessing media devices.", error);
+            alert("Could not access camera or microphone. Please check permissions.");
+        });
+}
+
+// Connect to Firebase and set up listeners
+function connectToMeeting() {
+    if (!meetingID) return;
+
+    db.ref(`meetings/${meetingID}`).once('value')
+        .then(snapshot => {
+            if (!snapshot.exists() || !snapshot.val().active) {
+                throw new Error("Meeting does not exist or is no longer active");
+            }
+
+            // Update or add current user as participant
+            return db.ref(`meetings/${meetingID}/participants/${currentUser.id}`).set({
+                name: currentUser.name,
+                isOnline: true,
+                joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                isHost: currentUser.isHost
+            });
+        })
+        .then(() => {
+            setupFirebaseListeners();
+        })
+        .catch(error => {
+            console.error("Error connecting to meeting:", error);
+            alert("Error: " + error.message);
+            window.location.href = "meeting.html";
+        });
 }
 
 // Toggle Microphone
-document.getElementById("mic-toggle").addEventListener("click", () => {
+function toggleMicrophone() {
+    if (!localStream) return;
+
     const audioTrack = localStream.getAudioTracks()[0];
     audioTrack.enabled = !audioTrack.enabled;
-    const micIcon = audioTrack.enabled ? "fa-microphone" : "fa-microphone-slash";
-    document.getElementById("mic-toggle").innerHTML = `<i class="fas ${micIcon}"></i>`;
-});
+
+    const micToggle = document.getElementById('mic-toggle');
+    if (micToggle) {
+        micToggle.innerHTML = `<i class="fas ${audioTrack.enabled ? 'fa-microphone' : 'fa-microphone-slash'}"></i>`;
+    }
+
+    // Update status in Firebase
+    updateParticipantAudioStatus(audioTrack.enabled);
+}
 
 // Toggle Camera
-document.getElementById("cam-toggle").addEventListener("click", () => {
+function toggleCamera() {
+    if (!localStream) return;
+
     const videoTrack = localStream.getVideoTracks()[0];
     videoTrack.enabled = !videoTrack.enabled;
-    const camIcon = videoTrack.enabled ? "fa-video" : "fa-video-slash";
-    document.getElementById("cam-toggle").innerHTML = `<i class="fas ${camIcon}"></i>`;
-});
+
+    const camToggle = document.getElementById('cam-toggle');
+    if (camToggle) {
+        camToggle.innerHTML = `<i class="fas ${videoTrack.enabled ? 'fa-video' : 'fa-video-slash'}"></i>`;
+    }
+
+    // Update status in Firebase
+    updateParticipantVideoStatus(videoTrack.enabled);
+}
 
 // Toggle Screen Share
-document.getElementById("screen-share-toggle").addEventListener("click", () => {
+function toggleScreenShare() {
     if (screenStream) {
-        stopStream(screenStream);
+        // Stop screen sharing
+        screenStream.getTracks().forEach(track => track.stop());
         screenStream = null;
-        document.getElementById("screen-share-toggle").innerHTML = `<i class="fas fa-desktop"></i>`;
+
+        const screenShareToggle = document.getElementById('screen-share-toggle');
+        if (screenShareToggle) {
+            screenShareToggle.innerHTML = `<i class="fas fa-desktop"></i>`;
+        }
+
+        // Notify Firebase that screen sharing has stopped
+        db.ref(`meetings/${meetingID}/screenShare/${currentUser.id}`).remove();
     } else {
+        // Start screen sharing
         navigator.mediaDevices.getDisplayMedia({ video: true })
             .then(stream => {
                 screenStream = stream;
-                const videoElement = document.createElement("video");
-                videoElement.srcObject = stream;
-                videoElement.autoplay = true;
-                document.getElementById("video-container").appendChild(videoElement);
-                document.getElementById("screen-share-toggle").innerHTML = `<i class="fas fa-desktop-slash"></i>`;
+
+                // Create a new video element for the screen share
+                const screenVideo = document.createElement('video');
+                screenVideo.srcObject = stream;
+                screenVideo.autoplay = true;
+                document.getElementById('video-container').appendChild(screenVideo);
+
+                const screenShareToggle = document.getElementById('screen-share-toggle');
+                if (screenShareToggle) {
+                    screenShareToggle.innerHTML = `<i class="fas fa-desktop-slash"></i>`;
+                }
+
+                // Notify Firebase that screen sharing is active
+                db.ref(`meetings/${meetingID}/screenShare/${currentUser.id}`).set({
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    active: true,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                // Stop screen sharing when the stream ends
+                stream.getVideoTracks()[0].onended = toggleScreenShare;
             })
-            .catch(error => console.error("Error sharing screen:", error));
+            .catch(error => {
+                console.error("Error sharing screen:", error);
+                alert("Screen sharing failed or was cancelled.");
+            });
     }
-});
+}
 
-// Toggle Video Grid
-document.getElementById("grid-toggle").addEventListener("click", () => {
-    const videoContainer = document.getElementById("video-container");
-    if (isVideoGrid) {
-        videoContainer.style.display = "block"; // Switch to grid
+// Update participant audio status in Firebase
+function updateParticipantAudioStatus(isEnabled) {
+    if (meetingID && currentUser.id) {
+        db.ref(`meetings/${meetingID}/participants/${currentUser.id}`).update({
+            hasAudio: isEnabled
+        });
+    }
+}
+
+// Update participant video status in Firebase
+function updateParticipantVideoStatus(isEnabled) {
+    if (meetingID && currentUser.id) {
+        db.ref(`meetings/${meetingID}/participants/${currentUser.id}`).update({
+            hasVideo: isEnabled
+        });
+    }
+}
+
+// Send chat message to Firebase
+function sendChatMessage() {
+    const messageInput = document.getElementById('chat-input');
+    if (!messageInput || messageInput.value.trim() === "") return;
+
+    const message = {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        text: messageInput.value,
+        timestamp: firebase.database.ServerValue.TIMESTAMP
+    };
+
+    db.ref(`meetings/${meetingID}/messages`).push(message)
+        .then(() => {
+            messageInput.value = ""; // Clear input field
+        })
+        .catch(error => {
+            console.error("Error sending message:", error);
+        });
+}
+
+// Display chat message in the chat area
+function displayChatMessage(message) {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageElement = document.createElement('div');
+    messageElement.className = 'chat-message';
+
+    const time = new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    messageElement.innerHTML = `
+        <div class="message-header">
+            <strong>${message.userId === currentUser.id ? 'You' : message.userName}</strong>
+            <span class="message-time">${time}</span>
+        </div>
+        <div class="message-body">${sanitizeHTML(message.text)}</div>
+    `;
+
+    chatMessages.appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to bottom
+}
+
+// End meeting or leave meeting
+function endMeeting() {
+    const confirmMessage = currentUser.isHost 
+        ? "Are you sure you want to end the meeting for all participants?" 
+        : "Are you sure you want to leave the meeting?";
+
+    if (confirm(confirmMessage)) {
+        if (currentUser.isHost) {
+            // End meeting for all
+            db.ref(`meetings/${meetingID}`).update({
+                active: false,
+                endedAt: firebase.database.ServerValue.TIMESTAMP
+            })
+            .then(() => {
+                cleanupAndRedirect();
+            })
+            .catch(error => {
+                console.error("Error ending meeting:", error);
+                cleanupAndRedirect();
+            });
+        } else {
+            // Just leave the meeting
+            db.ref(`meetings/${meetingID}/participants/${currentUser.id}`).update({
+                isOnline: false,
+                leftAt: firebase.database.ServerValue.TIMESTAMP
+            })
+            .then(() => {
+                cleanupAndRedirect();
+            })
+            .catch(error => {
+                console.error("Error leaving meeting:", error);
+                cleanupAndRedirect();
+            });
+        }
+    }
+}
+
+// Cleanup and redirect to home page
+function cleanupAndRedirect() {
+    // Stop all streams
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Remove Firebase listeners
+    if (firebaseListenersActive) {
+        db.ref(`meetings/${meetingID}/participants`).off();
+        db.ref(`meetings/${meetingID}/messages`).off();
+        firebaseListenersActive = false;
+    }
+
+    // Clear session storage
+    sessionStorage.removeItem('meetingID');
+    sessionStorage.removeItem('userID');
+    sessionStorage.removeItem('userName');
+    sessionStorage.removeItem('isHost');
+
+    // Redirect to main page
+    window.location.href = "meeting.html";
+}
+
+// Function to copy meeting info
+function copyMeetingInfo() {
+    const meetingLink = `${window.location.origin}/meetingroom.html?id=${meetingID}`;
+    const copyText = `Meeting ID: ${meetingID}\nMeeting Link: ${meetingLink}`;
+    
+    // Create a temporary textarea to copy text
+    const textarea = document.createElement("textarea");
+    textarea.value = copyText;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    document.body.removeChild(textarea);
+    
+    // Show feedback
+    const button = document.getElementById("copy-meeting-info");
+    if (button) {
+        const originalText = button.textContent;
+        button.textContent = "Copied!";
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+    }
+}
+
+// Sanitize HTML to prevent XSS
+function sanitizeHTML(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Update participants list
+function updateParticipantsList(participantsData) {
+    const participantsList = document.getElementById("participants-list");
+    const participantCount = document.getElementById("participant-count");
+
+    if (!participantsList || !participantCount) {
+        console.error("Participants list elements not found");
+        return;
+    }
+
+    // Clear current list
+    participantsList.innerHTML = "";
+
+    // Count online participants
+    let onlineCount = 0;
+
+    // Add each participant to the list
+    Object.keys(participantsData).forEach(userId => {
+        const participant = participantsData[userId];
+        if (participant.isOnline) onlineCount++;
+
+        const participantItem = document.createElement("div");
+        participantItem.className = "participant-item";
+        participantItem.dataset.userId = userId;
+
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "participant-item-name";
+        nameSpan.textContent = participant.name + (userId === currentUser.id ? " (You)" : "");
+
+        const statusIcons = document.createElement("div");
+        statusIcons.className = "participant-status-icons";
+
+        const micIcon = document.createElement("i");
+        micIcon.className = participant.hasAudio ? "fas fa-microphone" : "fas fa-microphone-slash";
+
+        const videoIcon = document.createElement("i");
+        videoIcon.className = participant.hasVideo ? "fas fa-video" : "fas fa-video-slash";
+
+        const onlineStatus = document.createElement("span");
+        onlineStatus.className = "online-status";
+        onlineStatus.classList.add(participant.isOnline ? "online" : "offline");
+
+        statusIcons.appendChild(micIcon);
+        statusIcons.appendChild(videoIcon);
+        statusIcons.appendChild(onlineStatus);
+
+        participantItem.appendChild(nameSpan);
+        participantItem.appendChild(statusIcons);
+
+        participantsList.appendChild(participantItem);
+    });
+
+    // Update participant count
+    participantCount.textContent = onlineCount;
+}
+
+// Update connection status UI
+function updateConnectionStatus(isConnected) {
+    const connectionStatus = document.getElementById('connection-status');
+    const statusIndicator = connectionStatus.querySelector('.status-indicator');
+
+    if (isConnected) {
+        connectionStatus.style.display = 'flex';
+        statusIndicator.classList.remove('disconnected');
     } else {
-        videoContainer.style.display = "flex"; // Switch to single speaker view
-    }
-    isVideoGrid = !isVideoGrid;
-});
-
-// Toggle Emoji Reaction
-document.getElementById("reaction-emoji").addEventListener("click", () => {
-    alert("You reacted with a smile! 😄");
-});
-
-// End Call
-// End Call
-// End Call
-// End Call with confirmation
-document.getElementById("end-call").addEventListener("click", () => {
-    const confirmLeave = confirm("Are you sure you want to leave the meeting?");
-    if (confirmLeave) {
-        stopStream(localStream);
-        stopStream(screenStream);
-        window.location.href = 'main.html'; // Redirect to main.html
-    }
-    // If the user clicks "Cancel", nothing happens and they stay in the meeting
-});
-
-
-const participantName = "You"; // Replace with actual participant name if dynamic
-
-// Send message on button click
-document.getElementById("send-message").addEventListener("click", sendMessage);
-
-// Send message on Enter key press
-document.getElementById("chat-input").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault(); // Prevent form submission or line break
-        sendMessage();
-    }
-});
-
-// Send message function
-function sendMessage() {
-    const messageInput = document.getElementById("chat-input");
-    const message = messageInput.value.trim();
-
-    if (message !== "") {
-        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        const messageElement = document.createElement("div");
-        messageElement.className = "chat-message";
-        messageElement.innerHTML = `
-            <strong>${participantName}</strong>
-            <span style="font-size: 0.8em; color: gray; margin-left: 5px;">${time}</span>
-            <div>${message}</div>
-        `;
-
-        const chatMessages = document.getElementById("chat-messages");
-        chatMessages.appendChild(messageElement);
-
-        messageInput.value = "";
-
-        // Auto-scroll to latest message
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-}
-
-// Close Chat Panel
-document.getElementById("close-chat").addEventListener("click", () => {
-    document.getElementById("chat-panel").style.display = "none";
-});
-
-// Show Chat Panel
-document.getElementById("emoji-toggle").addEventListener("click", () => {
-    document.getElementById("chat-panel").style.display = "block";
-});
-
-
-// Latency Display
-function showLatency() {
-    if (latencyInterval) clearInterval(latencyInterval);
-
-    latencyInterval = setInterval(() => {
-        const latency = Math.floor(Math.random() * 100); // Random latency
-        document.getElementById("latency-display").innerText = `Latency: ${latency}ms`;
-    }, 1000);
-}
-
-// Start Everything
-startLocalStream();
-showLatency();
-
-function stopStream(stream) {
-    if (stream) {
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
+        connectionStatus.style.display = 'none';
+        statusIndicator.classList.add('disconnected');
     }
 }

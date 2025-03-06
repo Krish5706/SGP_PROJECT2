@@ -1,15 +1,67 @@
+// Global variables
 let cameraStream = null;
 let microphoneStream = null;
+let currentUser = {
+    id: null,
+    name: "Guest"
+};
 
-// Function to generate a random meeting ID
-function generateMeetingID() {
-    return Math.random().toString(36).substring(2, 10).toUpperCase();
+// DOM Elements
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize UI elements
+    const cameraBtn = document.getElementById('cameraBtn');
+    const microphoneBtn = document.getElementById('microphoneBtn');
+    const startMeetingBtn = document.getElementById('startMeetingBtn');
+    const joinMeetingBtn = document.getElementById('joinMeetingBtn');
+    const copyLinkBtn = document.getElementById('copyLinkBtn');
+    const enterMeetingBtn = document.getElementById('enterMeetingBtn');
+    const joinExistingMeetingBtn = document.getElementById('joinExistingMeetingBtn');
+    const userNameInput = document.getElementById('userName');
+    
+    // Set up event listeners
+    if (cameraBtn) cameraBtn.addEventListener('click', toggleCamera);
+    if (microphoneBtn) microphoneBtn.addEventListener('click', toggleMicrophone);
+    if (startMeetingBtn) startMeetingBtn.addEventListener('click', startMeeting);
+    if (joinMeetingBtn) joinMeetingBtn.addEventListener('click', showJoinForm);
+    if (copyLinkBtn) copyLinkBtn.addEventListener('click', copyMeetingLink);
+    if (enterMeetingBtn) enterMeetingBtn.addEventListener('click', enterMeeting);
+    if (joinExistingMeetingBtn) joinExistingMeetingBtn.addEventListener('click', joinExistingMeeting);
+    if (userNameInput) userNameInput.addEventListener('input', updateUserName);
+    
+    // Check if we're returning from a meeting
+    const previousMeetingId = sessionStorage.getItem('previousMeetingId');
+    if (previousMeetingId) {
+        // Show a message that the previous meeting has ended
+        alert(`Your previous meeting (${previousMeetingId}) has ended.`);
+        sessionStorage.removeItem('previousMeetingId');
+    }
+    
+    // Generate a random user ID if not already set
+    if (!sessionStorage.getItem('userID')) {
+        sessionStorage.setItem('userID', 'user_' + Math.random().toString(36).substring(2, 10));
+    }
+    
+    currentUser.id = sessionStorage.getItem('userID');
+    
+    // Set user name from session storage if available
+    if (sessionStorage.getItem('userName')) {
+        currentUser.name = sessionStorage.getItem('userName');
+        if (userNameInput) userNameInput.value = currentUser.name;
+    }
+});
+
+// Function to update user name
+function updateUserName(e) {
+    currentUser.name = e.target.value || "Guest";
+    sessionStorage.setItem('userName', currentUser.name);
 }
 
 // Function to toggle camera
 function toggleCamera() {
     const cameraBtn = document.getElementById("cameraBtn");
     const cameraIcon = document.getElementById("cameraIcon");
+    
+    if (!cameraBtn || !cameraIcon) return;
 
     if (!cameraStream) {
         // If the camera is not on, start the camera
@@ -18,17 +70,24 @@ function toggleCamera() {
                 cameraStream = stream;
                 addVideoStream(stream);
                 cameraIcon.classList.replace("fa-video", "fa-video-slash");
-                cameraBtn.innerHTML = '<i class="fas fa-video-slash"></i> Disable Camera'; // Text for Disable
+                cameraBtn.innerHTML = '<i class="fas fa-video-slash" id="cameraIcon"></i> Disable Camera';
             })
             .catch(error => {
                 console.error("Camera access denied:", error);
+                alert("Could not access camera. Please check permissions.");
             });
     } else {
         // If the camera is on, stop the camera
         stopMediaStream(cameraStream);
         cameraStream = null;
         cameraIcon.classList.replace("fa-video-slash", "fa-video");
-        cameraBtn.innerHTML = '<i class="fas fa-video"></i> Enable Camera'; // Text for Enable
+        cameraBtn.innerHTML = '<i class="fas fa-video" id="cameraIcon"></i> Enable Camera';
+        
+        // Reset video grid
+        const videoGrid = document.getElementById("videoGrid");
+        if (videoGrid) {
+            videoGrid.innerHTML = '<div class="placeholder-text">Camera preview will appear here</div>';
+        }
     }
 }
 
@@ -36,6 +95,8 @@ function toggleCamera() {
 function toggleMicrophone() {
     const microphoneBtn = document.getElementById("microphoneBtn");
     const microphoneIcon = document.getElementById("microphoneIcon");
+    
+    if (!microphoneBtn || !microphoneIcon) return;
 
     if (!microphoneStream) {
         // If the microphone is not on, start the microphone
@@ -43,44 +104,168 @@ function toggleMicrophone() {
             .then(stream => {
                 microphoneStream = stream;
                 microphoneIcon.classList.replace("fa-microphone", "fa-microphone-slash");
-                microphoneBtn.innerHTML = '<i class="fas fa-microphone-slash"></i> Disable Microphone'; // Text for Disable
+                microphoneBtn.innerHTML = '<i class="fas fa-microphone-slash" id="microphoneIcon"></i> Disable Microphone';
             })
             .catch(error => {
                 console.error("Microphone access denied:", error);
+                alert("Could not access microphone. Please check permissions.");
             });
     } else {
         // If the microphone is on, stop the microphone
         stopMediaStream(microphoneStream);
         microphoneStream = null;
         microphoneIcon.classList.replace("fa-microphone-slash", "fa-microphone");
-        microphoneBtn.innerHTML = '<i class="fas fa-microphone"></i> Enable Microphone'; // Text for Enable
+        microphoneBtn.innerHTML = '<i class="fas fa-microphone" id="microphoneIcon"></i> Enable Microphone';
     }
+}
+
+// Function to generate a random meeting ID
+function generateMeetingID() {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
 
 // Function to start the meeting
 function startMeeting() {
+    // Update user name from input
+    const userNameInput = document.getElementById('userName');
+    if (userNameInput) {
+        currentUser.name = userNameInput.value || "Guest";
+        sessionStorage.setItem('userName', currentUser.name);
+    }
+    
     const meetingID = generateMeetingID();
-    const meetingLink = `https://transcendmeet.com/join/${meetingID}`;
+    const meetingLink = `${window.location.origin}/meetingroom.html?id=${meetingID}`;
 
     // Set the meeting ID and link in the UI
     document.getElementById("meetingID").innerText = meetingID;
     document.getElementById("meetingLink").value = meetingLink;
+    
+    // Show the meeting info section
+    document.getElementById("startMeetingInfo").style.display = "block";
+    
+    // Create meeting in Firebase
+    createMeetingInFirebase(meetingID);
+}
 
-    // Navigate to the meeting room page, passing the meeting ID via URL
-    // window.location.href = `meetingroom.html?meetingID=${meetingID}`;
-    window.location.href = "meetingroom.html";
+// Function to create meeting in Firebase
+function createMeetingInFirebase(meetingID) {
+    // Generate a random user ID if not signed in
+    currentUser.id = currentUser.id || 'user_' + Math.random().toString(36).substring(2, 10);
+    sessionStorage.setItem('userID', currentUser.id);
+    
+    // Create the meeting in Firebase
+    db.ref('meetings/' + meetingID).set({
+        createdAt: firebase.database.ServerValue.TIMESTAMP,
+        createdBy: currentUser.id,
+        active: true
+    }).then(() => {
+        // Add the creator as a participant
+        return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
+            name: currentUser.name,
+            joinedAt: firebase.database.ServerValue.TIMESTAMP,
+            isHost: true,
+            hasVideo: !!cameraStream,
+            hasAudio: !!microphoneStream,
+            isOnline: true
+        });
+    }).catch(error => {
+        console.error("Error creating meeting:", error);
+        alert("Failed to create meeting. Please try again.");
+    });
+}
+
+// Function to enter the created meeting
+function enterMeeting() {
+    const meetingID = document.getElementById("meetingID").innerText;
+    if (!meetingID) {
+        alert("No meeting ID found. Please create a meeting first.");
+        return;
+    }
+    
+    // Store meeting info in session storage
+    sessionStorage.setItem('meetingID', meetingID);
+    sessionStorage.setItem('userID', currentUser.id);
+    sessionStorage.setItem('userName', currentUser.name);
+    sessionStorage.setItem('isHost', 'true');
+    
+    // Redirect to meeting room
+    window.location.href = `meetingroom.html?id=${meetingID}`;
+}
+
+// Function to show join meeting form
+function showJoinForm() {
+    const joinForm = document.getElementById("joinMeetingForm");
+    if (joinForm) {
+        joinForm.style.display = joinForm.style.display === "none" ? "block" : "none";
+    }
+}
+
+// Function to join an existing meeting
+function joinExistingMeeting() {
+    const meetingID = document.getElementById("joinMeetingID").value.trim();
+    const userName = document.getElementById("participantName").value.trim() || "Guest";
+    
+    if (!meetingID) {
+        alert("Please enter a meeting ID");
+        return;
+    }
+    
+    // Update current user
+    currentUser.name = userName;
+    sessionStorage.setItem('userName', userName);
+    
+    // Check if the meeting exists
+    db.ref('meetings/' + meetingID).once('value')
+        .then(snapshot => {
+            if (snapshot.exists() && snapshot.val().active) {
+                // Meeting exists and is active
+                // Add user as participant
+                return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
+                    name: userName,
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                    isHost: false,
+                    hasVideo: !!cameraStream,
+                    hasAudio: !!microphoneStream,
+                    isOnline: true
+                });
+            } else {
+                throw new Error("Meeting not found or inactive");
+            }
+        })
+        .then(() => {
+            // Store session data and navigate to meeting room
+            sessionStorage.setItem('meetingID', meetingID);
+            sessionStorage.setItem('isHost', 'false');
+            
+            window.location.href = `meetingroom.html?id=${meetingID}`;
+        })
+        .catch(error => {
+            console.error("Error joining meeting:", error);
+            alert("Failed to join meeting: " + error.message);
+        });
 }
 
 // Function to copy the meeting link
 function copyMeetingLink() {
     const meetingLink = document.getElementById("meetingLink");
+    if (!meetingLink) return;
+    
     meetingLink.select();
     document.execCommand("copy");
+    
+    // Show a temporary "Copied!" message
+    const originalValue = meetingLink.value;
+    meetingLink.value = "Copied!";
+    setTimeout(() => {
+        meetingLink.value = originalValue;
+    }, 1500);
 }
 
 // Function to add a video stream to the grid
 function addVideoStream(stream) {
     const videoGrid = document.getElementById("videoGrid");
+    if (!videoGrid) return;
+    
     videoGrid.innerHTML = ""; // Clear placeholder text
 
     const videoBox = document.createElement("div");
@@ -89,6 +274,7 @@ function addVideoStream(stream) {
     const video = document.createElement("video");
     video.srcObject = stream;
     video.autoplay = true;
+    video.muted = true; // Mute to prevent feedback
     video.playsInline = true;
 
     videoBox.appendChild(video);
@@ -97,5 +283,7 @@ function addVideoStream(stream) {
 
 // Function to stop media stream
 function stopMediaStream(stream) {
-    stream.getTracks().forEach(track => track.stop());
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
 }

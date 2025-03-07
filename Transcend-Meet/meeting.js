@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check if we're returning from a meeting
     const previousMeetingId = sessionStorage.getItem('previousMeetingId');
     if (previousMeetingId) {
-        // Show a message that the previous meeting has ended
         alert(`Your previous meeting (${previousMeetingId}) has ended.`);
         sessionStorage.removeItem('previousMeetingId');
     }
@@ -59,15 +58,11 @@ function checkForMeetingLink() {
     const meetingLink = urlParams.get('link');
     
     if (meetingLink) {
-        // User arrived via a meeting link
         console.log("Meeting link detected:", meetingLink);
         
-        // Check if user is signed in
         if (!firebase.auth().currentUser) {
-            // Show sign-in/sign-up form
             showAuthForm(meetingLink);
         } else {
-            // Verify the meeting link and join
             validateAndJoinMeeting(meetingLink);
         }
     }
@@ -75,10 +70,8 @@ function checkForMeetingLink() {
 
 // Show authentication form when user arrives via link but isn't signed in
 function showAuthForm(meetingLink) {
-    // Hide main content
     document.getElementById('mainContent').style.display = 'none';
     
-    // Create auth form
     const authForm = document.createElement('div');
     authForm.className = 'auth-container';
     authForm.innerHTML = `
@@ -98,49 +91,34 @@ function showAuthForm(meetingLink) {
     
     document.body.appendChild(authForm);
     
-    // Add event listeners
     document.getElementById('guestJoinBtn').addEventListener('click', function() {
         const guestName = document.getElementById('authName').value.trim() || "Guest";
-        
-        // Store user info
         currentUser.name = guestName;
         sessionStorage.setItem('userName', guestName);
-        
-        // Validate and join the meeting
         validateAndJoinMeeting(meetingLink);
     });
     
     document.getElementById('signInBtn').addEventListener('click', function() {
-        // Implement your authentication logic here
-        // For now, we'll just use the guest flow
         const userName = document.getElementById('authName').value.trim() || "Guest";
-        
-        // Store user info
         currentUser.name = userName;
         sessionStorage.setItem('userName', userName);
-        
-        // Validate and join the meeting
         validateAndJoinMeeting(meetingLink);
     });
 }
 
 // Validate meeting link and join if valid
 function validateAndJoinMeeting(meetingLink) {
-    // Decode the link if needed
     const decodedLink = decodeURIComponent(meetingLink);
     
-    // Query Firebase for the meeting link
     db.ref('meetingLinks').orderByChild('link').equalTo(decodedLink).once('value')
         .then(snapshot => {
             if (snapshot.exists()) {
-                // Get the meeting data
                 let meetingID = null;
                 snapshot.forEach(childSnapshot => {
                     meetingID = childSnapshot.val().meetingID;
                 });
                 
                 if (meetingID) {
-                    // Check if meeting is still active
                     return db.ref('meetings/' + meetingID).once('value');
                 } else {
                     throw new Error("Invalid meeting link structure");
@@ -152,23 +130,7 @@ function validateAndJoinMeeting(meetingLink) {
         .then(snapshot => {
             if (snapshot.exists() && snapshot.val().active) {
                 const meetingID = snapshot.key;
-                
-                // Add user as participant
-                return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
-                    name: currentUser.name,
-                    joinedAt: firebase.database.ServerValue.TIMESTAMP,
-                    isHost: false,
-                    hasVideo: !!cameraStream,
-                    hasAudio: !!microphoneStream,
-                    isOnline: true
-                }).then(() => {
-                    // Store session data
-                    sessionStorage.setItem('meetingID', meetingID);
-                    sessionStorage.setItem('isHost', 'false');
-                    
-                    // Redirect to meeting room
-                    window.location.href = `meetingroom.html?id=${meetingID}`;
-                });
+                return addParticipantToMeeting(meetingID);
             } else {
                 throw new Error("Meeting is no longer active");
             }
@@ -176,14 +138,26 @@ function validateAndJoinMeeting(meetingLink) {
         .catch(error => {
             console.error("Error validating meeting link:", error);
             alert("Failed to join meeting: " + error.message);
-            
-            // Remove auth form if exists
             const authForm = document.querySelector('.auth-container');
             if (authForm) authForm.remove();
-            
-            // Show main content
             document.getElementById('mainContent').style.display = 'block';
         });
+}
+
+// Add participant to the meeting
+function addParticipantToMeeting(meetingID) {
+    return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
+        name: currentUser.name,
+        joinedAt: firebase.database.ServerValue.TIMESTAMP,
+        isHost: false,
+        hasVideo: !!cameraStream,
+        hasAudio: !!microphoneStream,
+        isOnline: true
+    }).then(() => {
+        sessionStorage.setItem('meetingID', meetingID);
+        sessionStorage.setItem('isHost', 'false');
+        window.location.href = `meetingroom.html?id=${meetingID}`;
+    });
 }
 
 // Function to update user name
@@ -200,7 +174,6 @@ function toggleCamera() {
     if (!cameraBtn || !cameraIcon) return;
 
     if (!cameraStream) {
-        // If the camera is not on, start the camera
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
                 cameraStream = stream;
@@ -213,13 +186,11 @@ function toggleCamera() {
                 alert("Could not access camera. Please check permissions.");
             });
     } else {
-        // If the camera is on, stop the camera
         stopMediaStream(cameraStream);
         cameraStream = null;
         cameraIcon.classList.replace("fa-video-slash", "fa-video");
         cameraBtn.innerHTML = '<i class="fas fa-video" id="cameraIcon"></i> Enable Camera';
         
-        // Reset video grid
         const videoGrid = document.getElementById("videoGrid");
         if (videoGrid) {
             videoGrid.innerHTML = '<div class="placeholder-text">Camera preview will appear here</div>';
@@ -235,7 +206,6 @@ function toggleMicrophone() {
     if (!microphoneBtn || !microphoneIcon) return;
 
     if (!microphoneStream) {
-        // If the microphone is not on, start the microphone
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
                 microphoneStream = stream;
@@ -247,7 +217,6 @@ function toggleMicrophone() {
                 alert("Could not access microphone. Please check permissions.");
             });
     } else {
-        // If the microphone is on, stop the microphone
         stopMediaStream(microphoneStream);
         microphoneStream = null;
         microphoneIcon.classList.replace("fa-microphone-slash", "fa-microphone");
@@ -262,18 +231,14 @@ function generateMeetingID() {
 
 // Function to generate a unique meeting link
 function generateUniqueMeetingLink() {
-    // Generate a unique identifier for the link
     const linkId = Math.random().toString(36).substring(2, 15) + 
                    Math.random().toString(36).substring(2, 15);
-    
-    // Create a shareable link format
     const baseUrl = window.location.origin;
     return `${baseUrl}/join.html?link=${linkId}`;
 }
 
 // Function to start the meeting
 function startMeeting() {
-    // Update user name from input
     const userNameInput = document.getElementById('userName');
     if (userNameInput) {
         currentUser.name = userNameInput.value || "Guest";
@@ -281,40 +246,29 @@ function startMeeting() {
     }
     
     const meetingID = generateMeetingID();
-    
-    // Generate a unique meeting link
     const uniqueLink = generateUniqueMeetingLink();
     const shareableLink = uniqueLink;
-    
-    // Extract link ID for storage
     const linkParts = uniqueLink.split('link=');
     const linkId = linkParts[1];
 
-    // Set the meeting ID and link in the UI
     document.getElementById("meetingID").innerText = meetingID;
     document.getElementById("meetingLink").value = shareableLink;
-    
-    // Show the meeting info section
     document.getElementById("startMeetingInfo").style.display = "block";
     
-    // Create meeting in Firebase and store the link
     createMeetingWithLink(meetingID, linkId, shareableLink);
 }
 
 // Function to create meeting in Firebase with link
 function createMeetingWithLink(meetingID, linkId, shareableLink) {
-    // Generate a random user ID if not signed in
     currentUser.id = currentUser.id || 'user_' + Math.random().toString(36).substring(2, 10);
     sessionStorage.setItem('userID', currentUser.id);
     
-    // Create the meeting in Firebase
     db.ref('meetings/' + meetingID).set({
         createdAt: firebase.database.ServerValue.TIMESTAMP,
         createdBy: currentUser.id,
         active: true,
         meetingLink: shareableLink
     }).then(() => {
-        // Add the creator as a participant
         return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
             name: currentUser.name,
             joinedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -324,7 +278,6 @@ function createMeetingWithLink(meetingID, linkId, shareableLink) {
             isOnline: true
         });
     }).then(() => {
-        // Store the meeting link in a separate collection for easier lookup
         return db.ref('meetingLinks/' + linkId).set({
             link: shareableLink,
             meetingID: meetingID,
@@ -345,13 +298,11 @@ function enterMeeting() {
         return;
     }
     
-    // Store meeting info in session storage
     sessionStorage.setItem('meetingID', meetingID);
     sessionStorage.setItem('userID', currentUser.id);
     sessionStorage.setItem('userName', currentUser.name);
     sessionStorage.setItem('isHost', 'true');
     
-    // Redirect to meeting room
     window.location.href = `meetingroom.html?id=${meetingID}`;
 }
 
@@ -373,16 +324,12 @@ function joinExistingMeeting() {
         return;
     }
     
-    // Update current user
     currentUser.name = userName;
     sessionStorage.setItem('userName', userName);
     
-    // Check if the meeting exists
     db.ref('meetings/' + meetingID).once('value')
         .then(snapshot => {
             if (snapshot.exists() && snapshot.val().active) {
-                // Meeting exists and is active
-                // Add user as participant
                 return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
                     name: userName,
                     joinedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -396,10 +343,8 @@ function joinExistingMeeting() {
             }
         })
         .then(() => {
-            // Store session data and navigate to meeting room
             sessionStorage.setItem('meetingID', meetingID);
             sessionStorage.setItem('isHost', 'false');
-            
             window.location.href = `meetingroom.html?id=${meetingID}`;
         })
         .catch(error => {
@@ -416,7 +361,6 @@ function copyMeetingLink() {
     meetingLink.select();
     document.execCommand("copy");
     
-    // Show a temporary "Copied!" message
     const originalValue = meetingLink.value;
     meetingLink.value = "Copied!";
     setTimeout(() => {

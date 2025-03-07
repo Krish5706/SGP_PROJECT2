@@ -1,0 +1,45 @@
+{
+    "rules": {
+      "meetings": {
+        "$meetingId": {
+          ".read": true,
+          ".write": "!data.exists()",
+          
+          "active": {
+            ".write": "data.parent().child('createdBy').val() === auth.uid || !data.exists()"
+          },
+          
+          "participants": {
+            "$userId": {
+              ".write": "$userId === auth.uid || !data.exists()"
+            }
+          },
+          
+          "messages": {
+            ".write": "root.child('meetings').child($meetingId).child('participants').child(auth.uid).exists()"
+          },
+          
+          "reactions": {
+            ".write": "root.child('meetings').child($meetingId).child('participants').child(auth.uid).exists()"
+          },
+          
+          "screenShare": {
+            ".write": "root.child('meetings').child($meetingId).child('participants').child(auth.uid).exists()"
+          },
+          
+          "candidates": {
+            "$userId": {
+              ".write": true
+            }
+          },
+          
+          "descriptions": {
+            "$userId": {
+              ".write": true
+            }
+          }
+        }
+      }
+    }
+  }
+  

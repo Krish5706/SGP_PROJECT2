@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Prevent caching during development -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>Virtual Meeting Room</title>
   <link rel="stylesheet" href="meetingroom.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -13,13 +17,34 @@
   
   <!-- WebRTC adapter for browser compatibility -->
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  
+  <!-- Verify script loading -->
+  <script>
+    console.log("HTML document loading scripts...");
+    window.scriptsLoaded = {
+      firebase: false,
+      adapter: false,
+      firebaseConfig: false,
+      whiteboard: false,
+      meetingroom: false
+    };
+    
+    function checkScriptsLoaded() {
+      console.log("Script loading status:", window.scriptsLoaded);
+    }
+    
+    // Check scripts after page loads
+    window.addEventListener('load', function() {
+      setTimeout(checkScriptsLoaded, 1000);
+    });
+  </script>
 </head>
 <body>
-
   <div class="meeting-container">
     <div class="meeting-header">
       <h2>Meeting: <span id="meeting-id-display">Loading...</span></h2>
       <button class="btn" id="copy-meeting-info">Copy Meeting Info</button>
+      <span class="version-indicator">v1.0.1</span>
     </div>
 
     <div class="main-content">
@@ -98,10 +123,209 @@
       <div class="status-indicator"></div>
       <span>Connected</span>
     </div>
+    
+    <!-- Debug console (hidden by default) -->
+    <div id="debug-console" style="display: none; position: fixed; bottom: 40px; right: 10px; background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px; max-width: 300px; max-height: 200px; overflow-y: auto; font-size: 12px; z-index: 9999;">
+      <div class="debug-title">Debug Log <button id="toggle-debug" style="float: right; font-size: 10px;">Hide</button></div>
+      <div id="debug-messages"></div>
+    </div>
+    
+    <!-- Emergency Redirect Button (visible only if issues occur) -->
+    <button id="emergency-redirect" style="display: none; position: fixed; bottom: 10px; right: 10px; background: red; color: white; padding: 10px; border-radius: 5px; z-index: 9999; cursor: pointer;">
+      Emergency Exit
+    </button>
   </div>
 
-  <script src="firebase-config.js"></script>
-  <script src="whiteboard.js"></script>
-  <script src="meetingroom.js"></script>
+  <script>
+    // Add emergency redirect functionality
+    document.getElementById('emergency-redirect').addEventListener('click', function() {
+      console.log("Emergency redirect triggered by user");
+      window.location.replace("main.html");
+    });
+    
+    // Simple debug logger
+    function debugLog(message) {
+      console.log(message);
+      const debugMessages = document.getElementById('debug-messages');
+      if (debugMessages) {
+        const msgElement = document.createElement('div');
+        msgElement.textContent = message;
+        debugMessages.appendChild(msgElement);
+        debugMessages.scrollTop = debugMessages.scrollHeight;
+      }
+    }
+    
+    // Toggle debug console
+    document.getElementById('toggle-debug').addEventListener('click', function() {
+      const debugConsole = document.getElementById('debug-console');
+      const isVisible = debugConsole.style.display !== 'none';
+      debugConsole.style.display = isVisible ? 'none' : 'block';
+      this.textContent = isVisible ? 'Show' : 'Hide';
+    });
+    
+    // Show debug console with keyboard shortcut (Ctrl+Shift+D)
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        const debugConsole = document.getElementById('debug-console');
+        debugConsole.style.display = 'block';
+        document.getElementById('toggle-debug').textContent = 'Hide';
+      }
+    });
+  </script>
+
+  <script src="firebase-config.js" onload="window.scriptsLoaded.firebaseConfig = true; console.log('firebase-config.js loaded');"></script>
+  <script src="whiteboard.js" onload="window.scriptsLoaded.whiteboard = true; console.log('whiteboard.js loaded');"></script>
+  <script src="meetingroom.js" onload="window.scriptsLoaded.meetingroom = true; console.log('meetingroom.js loaded');"></script>
+
+
+
+  <!-- EMERGENCY FIX - ADD THIS JUST BEFORE THE CLOSING </body> TAG -->
+<script>
+  // Wait for DOM to be fully loaded
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log("Emergency meeting exit script loaded");
+    
+    // Direct handler for end call button
+    const endCallBtn = document.getElementById('end-call');
+    if (endCallBtn) {
+      // Remove any existing event listeners (prevent conflicts)
+      const newEndCallBtn = endCallBtn.cloneNode(true);
+      endCallBtn.parentNode.replaceChild(newEndCallBtn, endCallBtn);
+      
+      // Add new direct event listener
+      newEndCallBtn.addEventListener('click', function(event) {
+        console.log("END CALL BUTTON CLICKED");
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Visual feedback
+        this.style.backgroundColor = "red";
+        this.innerHTML = "Ending...";
+        
+        // Try to update Firebase (but don't wait for it)
+        try {
+          const meetingID = new URLSearchParams(window.location.search).get('id') || 
+                           sessionStorage.getItem('meetingID');
+          
+          if (meetingID && window.db) {
+            window.db.ref(`meetings/${meetingID}`).update({
+              active: false,
+              endedAt: Date.now()
+            }).catch(err => console.error("Firebase update failed:", err));
+          }
+        } catch (error) {
+          console.error("Error updating Firebase:", error);
+        }
+        
+        // Force redirect after short delay (giving time for visual feedback)
+        setTimeout(function() {
+          // Clear any session data
+          try {
+            sessionStorage.removeItem('meetingID');
+            sessionStorage.removeItem('userID');
+            sessionStorage.removeItem('userName');
+            sessionStorage.removeItem('isHost');
+            localStorage.removeItem('currentMeeting');
+          } catch (e) {
+            console.error("Error clearing storage:", e);
+          }
+          
+          // Multiple redirect approaches
+          try {
+            window.location.href = "main.html";
+            
+            // Backup redirect methods
+            setTimeout(function() {
+              window.location.replace("main.html");
+              
+              setTimeout(function() {
+                window.open("main.html", "_self");
+                
+                // Last resort - create and click a link
+                setTimeout(function() {
+                  const link = document.createElement('a');
+                  link.href = "main.html";
+                  link.innerText = "Click here to exit meeting";
+                  link.style.position = "fixed";
+                  link.style.top = "50%";
+                  link.style.left = "50%";
+                  link.style.transform = "translate(-50%, -50%)";
+                  link.style.padding = "20px";
+                  link.style.background = "red";
+                  link.style.color = "white";
+                  link.style.fontSize = "24px";
+                  link.style.textDecoration = "none";
+                  link.style.zIndex = "99999";
+                  document.body.innerHTML = "";
+                  document.body.appendChild(link);
+                  document.title = "Exit Meeting";
+                  
+                  // Auto-click the link after 1 second
+                  setTimeout(function() {
+                    link.click();
+                  }, 1000);
+                }, 500);
+              }, 500);
+            }, 500);
+          } catch (e) {
+            console.error("Error with redirect:", e);
+          }
+        }, 1000);
+        
+        return false;
+      });
+      
+      console.log("Emergency end call handler attached");
+    } else {
+      console.error("End call button not found, creating emergency button");
+      
+      // Create emergency exit button
+      const emergencyBtn = document.createElement('button');
+      emergencyBtn.id = 'emergency-exit';
+      emergencyBtn.innerText = 'EMERGENCY EXIT';
+      emergencyBtn.style.position = 'fixed';
+      emergencyBtn.style.top = '10px';
+      emergencyBtn.style.right = '10px';
+      emergencyBtn.style.zIndex = '99999';
+      emergencyBtn.style.backgroundColor = 'red';
+      emergencyBtn.style.color = 'white';
+      emergencyBtn.style.padding = '10px 20px';
+      emergencyBtn.style.fontSize = '16px';
+      emergencyBtn.style.border = 'none';
+      emergencyBtn.style.borderRadius = '5px';
+      emergencyBtn.style.cursor = 'pointer';
+      
+      emergencyBtn.addEventListener('click', function() {
+        window.location.href = "main.html";
+      });
+      
+      document.body.appendChild(emergencyBtn);
+    }
+  });
+
+  // Create a forced exit button that appears after 30 seconds
+  setTimeout(function() {
+    const forcedExitBtn = document.createElement('button');
+    forcedExitBtn.innerText = 'FORCE EXIT';
+    forcedExitBtn.style.position = 'fixed';
+    forcedExitBtn.style.bottom = '10px';
+    forcedExitBtn.style.right = '10px';
+    forcedExitBtn.style.zIndex = '99999';
+    forcedExitBtn.style.backgroundColor = 'darkred';
+    forcedExitBtn.style.color = 'white';
+    forcedExitBtn.style.padding = '10px 20px';
+    forcedExitBtn.style.fontSize = '16px';
+    forcedExitBtn.style.border = 'none';
+    forcedExitBtn.style.borderRadius = '5px';
+    forcedExitBtn.style.cursor = 'pointer';
+    
+    forcedExitBtn.addEventListener('click', function() {
+      window.location.href = "main.html";
+    });
+    
+    document.body.appendChild(forcedExitBtn);
+  }, 30000);  // After 30 seconds
+</script>
+
 </body>
 </html>

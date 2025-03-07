@@ -98,7 +98,18 @@ function setupEventListeners() {
     if (micToggle) micToggle.addEventListener('click', toggleMicrophone);
     if (camToggle) camToggle.addEventListener('click', toggleCamera);
     if (screenShareToggle) screenShareToggle.addEventListener('click', toggleScreenShare);
-    if (endCallBtn) endCallBtn.addEventListener('click', endMeeting);
+    
+    // Add debug logging for end call button
+    if (endCallBtn) {
+        console.log("End call button found, attaching event listener");
+        endCallBtn.addEventListener('click', function() {
+            console.log("End call button clicked");
+            endMeeting();
+        });
+    } else {
+        console.warn("End call button not found in the DOM");
+    }
+    
     if (copyMeetingInfoBtn) copyMeetingInfoBtn.addEventListener('click', copyMeetingInfo);
     
     // Panels toggle
@@ -225,6 +236,7 @@ function setupFirebaseListeners() {
     
     // Listen for meeting status changes
     db.ref(`meetings/${meetingID}/active`).on('value', snapshot => {
+        console.log("Meeting active status changed:", snapshot.val());
         if (snapshot.exists() && snapshot.val() === false && !currentUser.isHost) {
             alert("The meeting has been ended by the host.");
             cleanupAndRedirect();
@@ -396,24 +408,46 @@ function displayChatMessage(message) {
 
 // End meeting or leave meeting
 function endMeeting() {
+    console.log("endMeeting function called");
+    
+    // Verify meetingID
+    if (!meetingID) {
+        console.error("No meeting ID found");
+        alert("No meeting ID found. Redirecting to main page.");
+        window.location.href = "main.html";
+        return;
+    }
+    
     const confirmMessage = currentUser.isHost 
         ? "Are you sure you want to end the meeting for all participants?" 
         : "Are you sure you want to leave the meeting?";
 
     if (confirm(confirmMessage)) {
+        console.log("User confirmed ending meeting. User is host:", currentUser.isHost);
+        
         if (currentUser.isHost) {
+            console.log("Attempting to update meeting status in Firebase...");
+            
             // End meeting for all
-            db.ref(`meetings/${meetingID}`).update({
-                active: false,
-                endedAt: firebase.database.ServerValue.TIMESTAMP
-            })
-            .then(() => {
-                cleanupAndRedirect();
-            })
-            .catch(error => {
-                console.error("Error ending meeting:", error);
-                cleanupAndRedirect();
-            });
+            try {
+                db.ref(`meetings/${meetingID}`).update({
+                    active: false,
+                    endedAt: firebase.database.ServerValue.TIMESTAMP
+                })
+                .then(() => {
+                    console.log("Meeting ended successfully in Firebase");
+                    cleanupAndRedirect();
+                })
+                .catch(error => {
+                    console.error("Error ending meeting:", error);
+                    alert("Error ending meeting: " + error.message + ". Redirecting anyway.");
+                    directRedirect();
+                });
+            } catch (e) {
+                console.error("Exception when updating Firebase:", e);
+                alert("Error accessing Firebase. Redirecting anyway.");
+                directRedirect();
+            }
         } else {
             // Just leave the meeting
             db.ref(`meetings/${meetingID}/participants/${currentUser.id}`).update({
@@ -425,39 +459,67 @@ function endMeeting() {
             })
             .catch(error => {
                 console.error("Error leaving meeting:", error);
-                cleanupAndRedirect();
+                directRedirect();
             });
         }
     }
 }
 
+// Direct redirect - last resort when other methods fail
+function directRedirect() {
+    console.log("Using direct redirect to main.html");
+    window.location.replace("main.html");
+    
+    // Last resort fallback with timeout
+    setTimeout(() => {
+        window.open("main.html", "_self");
+    }, 500);
+}
+
 // Cleanup and redirect to home page
 function cleanupAndRedirect() {
+    console.log("cleanupAndRedirect function called");
+    
     // Stop all streams
     if (localStream) {
+        console.log("Stopping local stream tracks");
         localStream.getTracks().forEach(track => track.stop());
     }
     if (screenStream) {
+        console.log("Stopping screen stream tracks");
         screenStream.getTracks().forEach(track => track.stop());
     }
 
     // Remove Firebase listeners
     if (firebaseListenersActive) {
-        db.ref(`meetings/${meetingID}/participants`).off();
-        db.ref(`meetings/${meetingID}/messages`).off();
-        db.ref(`meetings/${meetingID}/reactions`).off();
-        db.ref(`meetings/${meetingID}/active`).off();
-        firebaseListenersActive = false;
+        console.log("Removing Firebase listeners");
+        try {
+            db.ref(`meetings/${meetingID}/participants`).off();
+            db.ref(`meetings/${meetingID}/messages`).off();
+            db.ref(`meetings/${meetingID}/reactions`).off();
+            db.ref(`meetings/${meetingID}/active`).off();
+            firebaseListenersActive = false;
+        } catch (e) {
+            console.error("Error removing Firebase listeners:", e);
+        }
     }
 
     // Clear session storage
+    console.log("Clearing session storage");
     sessionStorage.removeItem('meetingID');
     sessionStorage.removeItem('userID');
     sessionStorage.removeItem('userName');
     sessionStorage.removeItem('isHost');
 
     // Redirect to main page
-    window.location.href = "meeting.html";
+    console.log("Redirecting to main.html");
+    window.location.href = "main.html";
+    
+    // Fallback redirect with delay
+    setTimeout(() => {
+        console.log("Fallback redirect triggered");
+        directRedirect();
+    }, 1000);
 }
 
 // Function to copy meeting info
@@ -653,7 +715,6 @@ function sendReaction(emoji) {
         });
 }
 
-// Display reaction on screen
 // Display reaction on screen with enhanced animation
 function displayReaction(reaction) {
     // Create reaction container element
@@ -665,7 +726,7 @@ function displayReaction(reaction) {
     emojiElement.className = 'reaction-emoji';
     emojiElement.textContent = reaction.emoji;
     
-    // Create user label (optional - shows briefly who sent it)
+    // Create user label
     const userLabel = document.createElement('div');
     userLabel.className = 'reaction-user';
     userLabel.textContent = reaction.userName;
@@ -729,20 +790,9 @@ function sendReaction(emoji) {
         });
 }
 
-// // Animate reaction on screen
-// function animateReaction(element) {
-//     // Apply CSS animation
-//     element.style.animation = 'float-up 4s ease-out forwards, fade-out 4s ease-out forwards';
-    
-//     // Add some random rotation
-//     const rotation = Math.random() * 40 - 20; // -20 to +20 degrees
-//     element.style.transform = `rotate(${rotation}deg)`;
-// }
-
 // Connect to participants (WebRTC)
 function connectToParticipants() {
     // This would implement the WebRTC peer connection logic
-    // For simplicity in this demo, we're focusing on the reaction functionality
     console.log("WebRTC connection functionality would be implemented here");
 }
 
@@ -754,3 +804,19 @@ function initializeWhiteboard() {
         console.log("Whiteboard functionality not available");
     }
 }
+
+// For testing - add emergency button if no end call button is found
+document.addEventListener('DOMContentLoaded', function() {
+    // Check after a short delay to make sure DOM is fully loaded
+    setTimeout(() => {
+        if (!document.getElementById('end-call')) {
+            console.warn("Creating emergency end call button");
+            const emergencyButton = document.createElement('button');
+            emergencyButton.id = 'emergency-end-call';
+            emergencyButton.textContent = "EMERGENCY END";
+            emergencyButton.style.cssText = "position: fixed; bottom: 10px; right: 10px; z-index: 9999; background: red; color: white; padding: 10px; border-radius: 5px; cursor: pointer;";
+            emergencyButton.addEventListener('click', endMeeting);
+            document.body.appendChild(emergencyButton);
+        }
+    }, 2000);
+});

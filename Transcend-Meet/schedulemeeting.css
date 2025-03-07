@@ -1,921 +1,168 @@
-/* Base Styles */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* Meeting Scheduler App Styles */
+body {
+  font-family: Arial, sans-serif;
+  line-height: 1.6;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 30px;
+}
+
+h2 {
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+  color: #2c3e50;
+}
+
+/* Form Styles */
+form {
+  margin-bottom: 30px;
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #555;
+}
+
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+/* Meeting List Styles */
+.meetings-list {
+  margin-top: 40px;
+}
+
+.meeting-card {
+  background-color: #f9f9f9;
+  border-left: 4px solid #3498db;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  position: relative;
+  transition: transform 0.2s;
+}
+
+.meeting-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.meeting-title {
+  font-weight: bold;
+  margin-bottom: 8px;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.meeting-time {
+  color: #3498db;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.meeting-participants {
+  margin-bottom: 8px;
+}
+
+.meeting-description {
+  font-style: italic;
+  color: #7f8c8d;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+}
+
+.delete-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 14px;
+}
+
+.delete-btn:hover {
+  background-color: #c0392b;
+}
+
+/* Responsive styles */
+@media (max-width: 600px) {
+  .container {
+      padding: 15px;
   }
   
-  body {
-    background-color: #f5f5f5;
-    color: #333;
-    line-height: 1.6;
-    height: 100vh;
-    overflow: hidden;
-  }
-  
-  /* Meeting Container */
-  .meeting-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background-color: #f9f9f9;
-  }
-  
-  /* Meeting Header */
-  .meeting-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #1a73e8;
-    color: white;
-  }
-  
-  .meeting-header h2 {
-    font-size: 18px;
-    font-weight: 500;
-  }
-  
-  .meeting-header button {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-  
-  .meeting-header button:hover {
-    background: rgba(255, 255, 255, 0.3);
-  }
-  
-  /* Main Content Area */
-  .main-content {
-    display: flex;
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
-  
-  /* Video Container */
-  .video-container {
-    flex: 1;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: flex-start;
-    gap: 10px;
-    padding: 10px;
-    background-color: #1e1e1e;
-    overflow-y: auto;
-  }
-  
-  .video-participant {
-    position: relative;
-    width: calc(50% - 10px);
-    height: 250px;
-    background-color: #2a2a2a;
-    border-radius: 8px;
-    overflow: hidden;
-  }
-  
-  .video-participant.screen-share {
-    width: 100%;
-    height: 400px;
-  }
-  
-  .video-participant video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .participant-name {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  
-  .video-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    height: 100%;
-    font-size: 60px;
-    color: #555;
-  }
-  
-  .video-participant.no-video .video-placeholder {
-    background-color: #3a3a3a;
-  }
-  
-  /* Participants Panel */
-  .participants-panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 250px;
-    height: 100%;
-    background-color: white;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    display: none;
-    flex-direction: column;
-  }
-  
-  .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background-color: #f0f0f0;
-    border-bottom: 1px solid #ddd;
-  }
-  
-  .panel-header h3 {
-    font-size: 16px;
-    font-weight: 500;
-  }
-  
-  .panel-close {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    color: #666;
-  }
-  
-  .panel-close:hover {
-    color: #333;
-  }
-  
-  .participants-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 10px;
-  }
-  
-  .participant-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid #eee;
-  }
-  
-  .participant-item-name {
-    font-size: 14px;
-  }
-  
-  .participant-status-icons {
-    display: flex;
-    gap: 8px;
-    color: #666;
-  }
-  
-  .online-status {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-  
-  .online-status.online {
-    background-color: #4CAF50;
-  }
-  
-  .online-status.offline {
-    background-color: #F44336;
-  }
-  
-  /* Chat Panel */
-  .chat-panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 100%;
-    background-color: white;
-    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    display: none;
-    flex-direction: column;
-  }
-  
-  .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 15px;
-  }
-  
-  .chat-message {
-    margin-bottom: 15px;
-    padding: 10px;
-    border-radius: 8px;
-    background-color: #f0f0f0;
-    max-width: 80%;
-  }
-  
-  .chat-message.my-message {
-    background-color: #d1e7ff;
-    margin-left: auto;
-  }
-  
-  .message-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-    font-size: 14px;
-  }
-  
-  .message-time {
-    color: #666;
-    font-size: 12px;
-  }
-  
-  .message-body {
-    word-wrap: break-word;
-  }
-  
-  .chat-input-container {
-    display: flex;
-    padding: 10px;
-    border-top: 1px solid #ddd;
-  }
-  
-  .chat-input-container input {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-right: 5px;
-  }
-  
-  .chat-input-container button {
-    background-color: #1a73e8;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  /* Whiteboard Container */
-  .whiteboard-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: white;
-    z-index: 9;
-    display: none;
-    flex-direction: column;
-  }
-  
-  .whiteboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background-color: #f0f0f0;
-    border-bottom: 1px solid #ddd;
-  }
-  
-  .whiteboard-tools {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  
-  .tool-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    color: #666;
-    padding: 5px;
-    border-radius: 4px;
-  }
-  
-  .tool-btn:hover, .tool-btn.active {
-    background-color: #ddd;
-    color: #333;
-  }
-  
-  #whiteboard-canvas {
-    width: 100%;
-    height: calc(100% - 50px);
-    cursor: crosshair;
-  }
-  
-  /* Controls Container */
-  .controls-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 15px;
-    background-color: #2a2a2a;
-    gap: 15px;
-  }
-  
-  .control-btn {
-    background-color: #444;
-    color: white;
-    border: none;
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    font-size: 18px;
-    transition: all 0.2s;
-  }
-  
-  .control-btn:hover {
-    background-color: #555;
-  }
-  
-  .control-btn.active {
-    background-color: #1a73e8;
-  }
-  
-  .end-call {
-    background-color: #F44336;
-  }
-  
-  .end-call:hover {
-    background-color: #d32f2f;
-  }
-  
-  /* Reaction Panel */
-  .reaction-panel {
-    position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    padding: 10px;
-    display: none;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    z-index: 20;
-  }
-  
-  .reaction-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
-  }
-  
-  .reaction-btn:hover {
-    background-color: #f0f0f0;
-  }
-  
-  /* Floating Reaction Animation */
-  .floating-reaction {
-    position: fixed;
-    bottom: 100px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 50px;
-    animation: float 3s ease-out;
-    text-align: center;
-    pointer-events: none;
-    z-index: 25;
-  }
-  
-  .reaction-username {
-    display: block;
-    font-size: 14px;
-    color: #fff;
-    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
-    margin-top: 5px;
-  }
-  
-  @keyframes float {
-    0% {
-        bottom: 100px;
-        opacity: 0;
-    }
-    10% {
-        opacity: 1;
-    }
-    90% {
-        opacity: 1;
-    }
-    100% {
-        bottom: 300px;
-        opacity: 0;
-    }
-  }
-  
-  /* Connection Status */
-  .connection-status {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  
-  .status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #4CAF50;
-  }
-  
-  .status-indicator.disconnected {
-    background-color: #F44336;
-  }
-  
-  /* WebRTC Connection States */
-  .ice-connection-state {
-    position: absolute;
-    bottom: 40px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-  
-  /* Responsive Styles */
-  @media (max-width: 768px) {
-    .video-participant {
-        width: 100%;
-    }
-    
-    .controls-container {
-        flex-wrap: wrap;
-        gap: 10px;
-    }
-    
-    .control-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 16px;
-    }
-    
-    .participants-panel, .chat-panel {
-        width: 100%;
-    }
-  }
-  
-  /* For smaller screens or mobile devices */
-  @media (max-width: 480px) {
-    .controls-container {
-      padding: 10px 5px;
-    }
-    
-    .control-btn {
-      width: 35px;
-      height: 35px;
+  input, textarea, select, button {
+      padding: 8px;
       font-size: 14px;
-    }
-    
-    .video-participant {
-      height: 200px;
-    }
-    
-    .reaction-panel {
-      width: 90%;
-    }
   }
   
-  /* Dark theme for video containers */
-  .dark-theme .video-container {
-    background-color: #121212;
+  .meeting-title {
+      font-size: 16px;
+      padding-right: 70px; /* Make room for delete button */
   }
   
-  .dark-theme .video-participant {
-    background-color: #1a1a1a;
+  .delete-btn {
+      top: 10px;
+      right: 10px;
+      padding: 4px 8px;
+      font-size: 12px;
   }
-  
-  /* Fullscreen mode for videos */
-  .video-participant.fullscreen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 30;
-    border-radius: 0;
-  }
-  
-  /* Muted and video-off indicators */
-  .media-indicator {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 3px 6px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-  
-  /* Connection quality indicator */
-  .connection-quality {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    color: white;
-    font-size: 12px;
-  }
-  
-  .quality-excellent {
-    color: #4CAF50;
-  }
-  
-  .quality-good {
-    color: #8BC34A;
-  }
-  
-  .quality-fair {
-    color: #FFC107;
-  }
-  
-  .quality-poor {
-    color: #FF5722;
-  }
-  
-  .quality-bad {
-    color: #F44336;
-  }
-  /* Reaction Panel Styling */
-  .reaction-panel {
-    position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 30px;
-    padding: 10px 15px;
-    display: none;
-    z-index: 100;
-    gap: 10px;
-  }
-  
-  .reaction-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 50%;
-    transition: all 0.2s;
-  }
-  
-  .reaction-btn:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    transform: scale(1.2);
-  }
-  
-  /* Reaction Emoji Styling */
-  .reaction-emoji {
-    position: absolute;
-    font-size: 36px;
-    z-index: 90;
-    user-select: none;
-    pointer-events: none;
-    opacity: 0.9;
-  }
-  
-  /* Animation for reactions */
-  @keyframes float-up {
-    0% {
-        transform: translateY(0) scale(0.5);
-    }
-    50% {
-        transform: translateY(-100px) scale(1.2);
-    }
-    100% {
-        transform: translateY(-200px) scale(1);
-    }
-  }
-  
-  @keyframes fade-out {
-    0% {
-        opacity: 0.9;
-    }
-    80% {
-        opacity: 0.8;
-    }
-    100% {
-        opacity: 0;
-    }
-  }
-  
-  /* Active button state */
-  .control-btn.active {
-    background-color: rgba(0, 132, 255, 0.7);
-    color: white;
-  }
-  
-  /* Video wrapper styling for screen share */
-  .video-wrapper {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    margin: 5px;
-  }
-  
-  .video-item {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .video-name-tag {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.5);
-    color: white;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-  
-  .screen-share-wrapper {
-    flex: 2;
-  }
-  
-  /* Chat message styling improvements */
-  .chat-message {
-    margin-bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    max-width: 85%;
-  }
-  
-  .own-message {
-    background-color: #e3f2fd;
-    align-self: flex-end;
-    margin-left: auto;
-  }
-  
-  .other-message {
-    background-color: #f1f1f1;
-    align-self: flex-start;
-  }
-  
-  .message-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-    font-size: 12px;
-  }
-  
-  .message-time {
-    color: #666;
-  }
-  
-  .message-body {
-    word-break: break-word;
-  }
-  /* Reaction Container and Elements */
-  .reaction-container {
-    position: absolute;
-    z-index: 90;
-    pointer-events: none;
-    animation: float-reaction var(--duration) ease-out var(--delay) forwards;
-  }
-  
-  .reaction-emoji {
-    font-size: 48px;
-    opacity: 0;
-    animation: emoji-appear 0.3s ease-out var(--delay) forwards,
-               emoji-pulse 2s ease-in-out var(--delay) 1,
-               emoji-fade 1.5s ease-in calc(var(--duration) - 1.5s + var(--delay)) forwards;
-  }
-  
-  .reaction-user {
-    text-align: center;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 10px;
-    padding: 2px 8px;
-    font-size: 12px;
-    white-space: nowrap;
-    opacity: 0;
-    animation: user-appear 0.3s ease-out var(--delay) forwards,
-               user-fade 0.5s ease-in 1s forwards;
-  }
-  
-  /* Main floating animation for the reaction container */
-  @keyframes float-reaction {
-    0% {
-        transform: translateY(0) translateX(0);
-        bottom: 70px;
-    }
-    10% {
-        transform: translateY(-30px) translateX(calc(var(--h-movement) * 0.1));
-    }
-    40% {
-        transform: translateY(-150px) translateX(calc(var(--h-movement) * 0.4));
-    }
-    70% {
-        transform: translateY(-270px) translateX(calc(var(--h-movement) * 0.7));
-    }
-    100% {
-        transform: translateY(-400px) translateX(var(--h-movement));
-        bottom: 70px;
-    }
-  }
-  
-  /* Emoji appearance animation */
-  @keyframes emoji-appear {
-    0% {
-        opacity: 0;
-        transform: scale(0.2);
-    }
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-  }
-  
-  /* Emoji pulse effect */
-  @keyframes emoji-pulse {
-    0%, 100% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.3);
-    }
-  }
-  
-  /* Emoji fade out animation */
-  @keyframes emoji-fade {
-    0% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-    }
-  }
-  
-  /* User label appearance and fade */
-  @keyframes user-appear {
-    0% {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-  }
-  
-  @keyframes user-fade {
-    0% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-    }
-  }
-  
-  /* Reaction Panel Styling - Updated for better visibility */
-  .reaction-panel {
-    position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: rgba(30, 30, 30, 0.85);
-    border-radius: 30px;
-    padding: 12px 18px;
-    display: none;
-    z-index: 100;
-    gap: 12px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  }
-  
-  .reaction-btn {
-    background: none;
-    border: none;
-    font-size: 28px;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 50%;
-    transition: all 0.2s;
-  }
-  
-  .reaction-btn:hover {
-    background-color: rgba(255, 255, 255, 0.25);
-    transform: scale(1.3);
-  }
-  /* Whiteboard container styling */
-  .whiteboard-container {
-    position: absolute;
-    top: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80%;
-    height: 70%;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    display: none;
-    flex-direction: column;
-    z-index: 95;
-  }
-  
-  .whiteboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #ddd;
-    border-radius: 8px 8px 0 0;
-  }
-  
-  .whiteboard-tools {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-  }
-  
-  .tool-btn {
-    background: none;
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .tool-btn:hover {
-    background-color: #e0e0e0;
-  }
-  
-  .tool-btn.active {
-    background-color: #2196F3;
-    color: white;
-  }
-  
-  #color-picker {
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    padding: 0;
-    overflow: hidden;
-  }
-  
-  .page-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: 15px;
-    padding-left: 15px;
-    border-left: 1px solid #ddd;
-  }
-  
-  #page-indicator {
-    font-size: 14px;
-    white-space: nowrap;
-  }
-  
-  #whiteboard-canvas {
-    flex: 1;
-    background-color: white;
-    border-radius: 0 0 8px 8px;
-    cursor: crosshair;
-  }
-  
-  /* Make sure the whiteboard container displays as flex when shown */
-  .whiteboard-container[style*="display: block"] {
-    display: flex !important;
-  }
-  
+}

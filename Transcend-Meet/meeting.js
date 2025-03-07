@@ -81,7 +81,7 @@ function showAuthForm(meetingLink) {
                 <button id="guestJoinBtn" class="btn">Join as Guest</button>
                 <button id="signInBtn" class="btn primary">Sign In</button>
             </div>
-            <p class="small-text">By joining, you agree to our Terms of Service</p>
+            <p class="small-text">By joining, you agree to our <a href="/terms" target="_blank">Terms of Service</a></p>
         </div>
     `;
     
@@ -140,20 +140,33 @@ function validateAndJoinMeeting(meetingLink) {
         });
 }
 
-// Add participant to the meeting
+// Improved function to add participant to the meeting
 function addParticipantToMeeting(meetingID) {
-    return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
-        name: currentUser.name,
-        joinedAt: firebase.database.ServerValue.TIMESTAMP,
-        isHost: false,
-        hasVideo: !!cameraStream,
-        hasAudio: !!microphoneStream,
-        isOnline: true
-    }).then(() => {
-        sessionStorage.setItem('meetingID', meetingID);
-        sessionStorage.setItem('isHost', 'false');
-        window.location.href = `meetingroom.html?id=${meetingID}`;
-    });
+    return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).once('value')
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                alert("You are already in this meeting.");
+                return;
+            } else {
+                return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
+                    name: currentUser.name,
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP,
+                    isHost: false,
+                    hasVideo: !!cameraStream,
+                    hasAudio: !!microphoneStream,
+                    isOnline: true
+                });
+            }
+        })
+        .then(() => {
+            sessionStorage.setItem('meetingID', meetingID);
+            sessionStorage.setItem('isHost', 'false');
+            window.location.href = `meetingroom.html?id=${meetingID}`;
+        })
+        .catch(error => {
+            console.error("Error adding participant:", error);
+            alert("Failed to join meeting: " + error.message);
+        });
 }
 
 // Function to update user name
@@ -323,9 +336,20 @@ function joinExistingMeeting() {
     currentUser.name = userName;
     sessionStorage.setItem('userName', userName);
     
+    // Check if the meeting exists
     db.ref('meetings/' + meetingID).once('value')
         .then(snapshot => {
             if (snapshot.exists() && snapshot.val().active) {
+                return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).once('value');
+            } else {
+                throw new Error("Meeting not found or inactive");
+            }
+        })
+        .then(participantSnapshot => {
+            if (participantSnapshot.exists()) {
+                alert("You are already in this meeting.");
+                return;
+            } else {
                 return db.ref('meetings/' + meetingID + '/participants/' + currentUser.id).set({
                     name: userName,
                     joinedAt: firebase.database.ServerValue.TIMESTAMP,
@@ -334,8 +358,6 @@ function joinExistingMeeting() {
                     hasAudio: !!microphoneStream,
                     isOnline: true
                 });
-            } else {
-                throw new Error("Meeting not found or inactive");
             }
         })
         .then(() => {

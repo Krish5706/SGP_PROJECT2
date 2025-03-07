@@ -28,13 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (joinExistingMeetingBtn) joinExistingMeetingBtn.addEventListener('click', joinExistingMeeting);
     if (userNameInput) userNameInput.addEventListener('input', updateUserName);
     
-    // Check if we're returning from a meeting
-    const previousMeetingId = sessionStorage.getItem('previousMeetingId');
-    if (previousMeetingId) {
-        alert(`Your previous meeting (${previousMeetingId}) has ended.`);
-        sessionStorage.removeItem('previousMeetingId');
-    }
-    
     // Generate a random user ID if not already set
     if (!sessionStorage.getItem('userID')) {
         sessionStorage.setItem('userID', 'user_' + Math.random().toString(36).substring(2, 10));
@@ -45,14 +38,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set user name from session storage if available
     if (sessionStorage.getItem('userName')) {
         currentUser.name = sessionStorage.getItem('userName');
-        if (userNameInput) userNameInput.value = currentUser.name;
+    } else {
+        // Set default name as "Guest"
+        currentUser.name = "Guest";
     }
     
     // Check if we're coming from a meeting link
     checkForMeetingLink();
 });
 
-// Function to check if user arrived via a meeting link
+// Function to check if the user arrived via a meeting link
 function checkForMeetingLink() {
     const urlParams = new URLSearchParams(window.location.search);
     const meetingLink = urlParams.get('link');
@@ -60,6 +55,7 @@ function checkForMeetingLink() {
     if (meetingLink) {
         console.log("Meeting link detected:", meetingLink);
         
+        // Check if the user is authenticated
         if (!firebase.auth().currentUser) {
             showAuthForm(meetingLink);
         } else {
@@ -68,7 +64,7 @@ function checkForMeetingLink() {
     }
 }
 
-// Show authentication form when user arrives via link but isn't signed in
+// Show authentication form when the user arrives via link but isn't signed in
 function showAuthForm(meetingLink) {
     document.getElementById('mainContent').style.display = 'none';
     

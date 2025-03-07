@@ -70,9 +70,6 @@ function initMeetingRoom() {
     // Connect to Firebase
     connectToMeeting();
     
-    // Initialize whiteboard (if applicable)
-    initializeWhiteboard();
-    
     // Update connection status
     updateConnectionStatus(true);
 }
@@ -99,15 +96,10 @@ function setupEventListeners() {
     if (camToggle) camToggle.addEventListener('click', toggleCamera);
     if (screenShareToggle) screenShareToggle.addEventListener('click', toggleScreenShare);
     
-    // Add debug logging for end call button
     if (endCallBtn) {
-        console.log("End call button found, attaching event listener");
         endCallBtn.addEventListener('click', function() {
-            console.log("End call button clicked");
             endMeeting();
         });
-    } else {
-        console.warn("End call button not found in the DOM");
     }
     
     if (copyMeetingInfoBtn) copyMeetingInfoBtn.addEventListener('click', copyMeetingInfo);
@@ -157,15 +149,15 @@ function startLocalStream() {
             localVideo.autoplay = true;
             localVideo.muted = true; // Mute the local video to prevent feedback
             localVideo.classList.add('video-item');
-            
+
             const videoWrapper = document.createElement('div');
             videoWrapper.classList.add('video-wrapper');
             videoWrapper.dataset.userId = currentUser.id;
-            
+
             const nameTag = document.createElement('div');
             nameTag.classList.add('video-name-tag');
             nameTag.textContent = currentUser.name + ' (You)';
-            
+
             videoWrapper.appendChild(localVideo);
             videoWrapper.appendChild(nameTag);
             document.getElementById('video-container').appendChild(videoWrapper);
@@ -212,28 +204,28 @@ function connectToMeeting() {
 // Setup Firebase listeners
 function setupFirebaseListeners() {
     if (firebaseListenersActive) return;
-    
+
     // Listen for participant changes
     db.ref(`meetings/${meetingID}/participants`).on('value', snapshot => {
         const participantsData = snapshot.val() || {};
         updateParticipantsList(participantsData);
     });
-    
+
     // Listen for chat messages
     db.ref(`meetings/${meetingID}/messages`).on('child_added', snapshot => {
         const message = snapshot.val();
         displayChatMessage(message);
     });
-    
+
     // Listen for reactions
     db.ref(`meetings/${meetingID}/reactions`).on('child_added', snapshot => {
         const reaction = snapshot.val();
         displayReaction(reaction);
-        
+
         // Remove reaction data after displaying
         snapshot.ref.remove();
     });
-    
+
     // Listen for meeting status changes
     db.ref(`meetings/${meetingID}/active`).on('value', snapshot => {
         console.log("Meeting active status changed:", snapshot.val());
@@ -242,10 +234,10 @@ function setupFirebaseListeners() {
             cleanupAndRedirect();
         }
     });
-    
+
     // Set online status when disconnecting
     db.ref(`meetings/${meetingID}/participants/${currentUser.id}/isOnline`).onDisconnect().set(false);
-    
+
     firebaseListenersActive = true;
 }
 
@@ -279,70 +271,6 @@ function toggleCamera() {
 
     // Update status in Firebase
     updateParticipantVideoStatus(videoTrack.enabled);
-}
-
-// Toggle Screen Share
-function toggleScreenShare() {
-    if (screenStream) {
-        // Stop screen sharing
-        screenStream.getTracks().forEach(track => track.stop());
-        screenStream = null;
-
-        const screenShareToggle = document.getElementById('screen-share-toggle');
-        if (screenShareToggle) {
-            screenShareToggle.innerHTML = `<i class="fas fa-desktop"></i>`;
-        }
-
-        // Notify Firebase that screen sharing has stopped
-        db.ref(`meetings/${meetingID}/screenShare/${currentUser.id}`).remove();
-    } else {
-        // Start screen sharing
-        navigator.mediaDevices.getDisplayMedia({ video: true })
-            .then(stream => {
-                screenStream = stream;
-
-                // Create a new video element for the screen share
-                const screenVideo = document.createElement('video');
-                screenVideo.srcObject = stream;
-                screenVideo.autoplay = true;
-                screenVideo.classList.add('screen-share');
-                
-                const videoWrapper = document.createElement('div');
-                videoWrapper.classList.add('video-wrapper', 'screen-share-wrapper');
-                videoWrapper.dataset.userId = `screen_${currentUser.id}`;
-                
-                const nameTag = document.createElement('div');
-                nameTag.classList.add('video-name-tag');
-                nameTag.textContent = `${currentUser.name}'s Screen`;
-                
-                videoWrapper.appendChild(screenVideo);
-                videoWrapper.appendChild(nameTag);
-                document.getElementById('video-container').appendChild(videoWrapper);
-
-                const screenShareToggle = document.getElementById('screen-share-toggle');
-                if (screenShareToggle) {
-                    screenShareToggle.innerHTML = `<i class="fas fa-stop-circle"></i>`;
-                }
-
-                // Notify Firebase that screen sharing is active
-                db.ref(`meetings/${meetingID}/screenShare/${currentUser.id}`).set({
-                    userId: currentUser.id,
-                    userName: currentUser.name,
-                    active: true,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-
-                // Stop screen sharing when the stream ends
-                stream.getVideoTracks()[0].onended = () => {
-                    videoWrapper.remove();
-                    toggleScreenShare();
-                };
-            })
-            .catch(error => {
-                console.error("Error sharing screen:", error);
-                alert("Screen sharing failed or was cancelled.");
-            });
-    }
 }
 
 // Update participant audio status in Firebase
@@ -748,46 +676,16 @@ function displayReaction(reaction) {
     reactionContainer.style.left = `${posX}px`;
     reactionContainer.style.bottom = '0';
     
-    // Add some randomization to make multiple reactions look natural
-    const duration = 3 + Math.random() * 2; // 3-5 seconds duration
-    const delay = Math.random() * 0.5; // 0-0.5 second delay
-    const horizontalMovement = (Math.random() * 100) - 50; // -50px to +50px horizontal drift
-    
-    // Set custom properties for animation
-    reactionContainer.style.setProperty('--duration', `${duration}s`);
-    reactionContainer.style.setProperty('--delay', `${delay}s`);
-    reactionContainer.style.setProperty('--h-movement', `${horizontalMovement}px`);
+    // Start animation
+    reactionContainer.classList.add('animated-reaction');
     
     // Append to container
     videoContainer.appendChild(reactionContainer);
     
-    // Remove after animation completes
+    // Remove after a set duration
     setTimeout(() => {
-        if (reactionContainer && reactionContainer.parentNode) {
-            reactionContainer.parentNode.removeChild(reactionContainer);
-        }
-    }, (duration + delay) * 1000);
-}
-
-// Send reaction to Firebase
-function sendReaction(emoji) {
-    if (!meetingID || !currentUser.id) return;
-    
-    const reaction = {
-        userId: currentUser.id,
-        userName: currentUser.name,
-        emoji: emoji,
-        timestamp: firebase.database.ServerValue.TIMESTAMP
-    };
-    
-    // Also display the reaction locally for immediate feedback
-    displayReaction(reaction);
-    
-    // Send to Firebase for other participants
-    db.ref(`meetings/${meetingID}/reactions`).push(reaction)
-        .catch(error => {
-            console.error("Error sending reaction:", error);
-        });
+        reactionContainer.remove();
+    }, 4000);
 }
 
 // Connect to participants (WebRTC)

@@ -204,6 +204,8 @@ function joinMeeting() {
 
 function scheduleMeeting() {
     alert("Redirecting to schedule meeting page...");
+    window.location.href='schedulemeeting.html';   
+    
     // Implement scheduling logic here
 }
 

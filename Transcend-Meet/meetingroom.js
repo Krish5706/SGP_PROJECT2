@@ -15,9 +15,9 @@ const configuration = {
         { urls: 'stun:stun4.google.com:19302' },
         // For production, add TURN servers for reliable connections
         // {
-        //     urls: 'turn:your-turn-server.com:3478',
-        //     username: 'username',
-        //     credential: 'password'
+        //     urls: 'turn:103.52.33.205 :3478',
+        //     username: 'daksh2208',
+        //     credential: 'Daksh@198115'
         // }
     ],
     iceCandidatePoolSize: 10

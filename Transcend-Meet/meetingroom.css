@@ -918,3 +918,82 @@ body {
 .whiteboard-container[style*="display: block"] {
   display: flex !important;
 }
+.connection-quality {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quality-excellent {
+  color: #4caf50;
+}
+
+.quality-good {
+  color: #8bc34a;
+}
+
+.quality-fair {
+  color: #ffc107;
+}
+
+.quality-poor {
+  color: #ff9800;
+}
+
+.quality-bad {
+  color: #f44336;
+}
+
+.media-indicator {
+  position: absolute;
+  bottom: 5px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.audio-indicator {
+  left: 5px;
+}
+
+.video-indicator {
+  left: 35px;
+}
+
+.video-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #3f51b5;
+  color: white;
+  font-size: 2em;
+  font-weight: bold;
+}
+
+.video-wrapper.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background-color: black;
+}

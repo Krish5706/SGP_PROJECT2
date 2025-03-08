@@ -1,11 +1,28 @@
 // WebRTC configuration
+
+let localVideoTrack;
+let localAudioTrack;
+let remoteStreams = {};
+let pendingICECandidates = {};
+
+// WebRTC configuration
 const configuration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.google.com:19302' },
-        { urls: 'stun:stun2.google.com:19302' }
-    ]
+        { urls: 'stun:stun2.google.com:19302' },
+        { urls: 'stun:stun3.google.com:19302' },
+        { urls: 'stun:stun4.google.com:19302' },
+        // For production, add TURN servers for reliable connections
+        // {
+        //     urls: 'turn:your-turn-server.com:3478',
+        //     username: 'username',
+        //     credential: 'password'
+        // }
+    ],
+    iceCandidatePoolSize: 10
 };
+
 
 // Meeting variables
 let localStream;
@@ -439,7 +456,42 @@ function setupFirebaseListeners() {
         });
         
         // Set online status when disconnecting
-        db.ref(`meetings/${meetingID}/participants/${currentUser.id}/isOnline`).onDisconnect().set(false);
+        db.ref(`meetings/${meetingID}/participants`).on('child_added', snapshot => {
+            const participantId = snapshot.key;
+            const participantData = snapshot.val();
+            
+            // Don't connect to self or offline participants
+            if (participantId === currentUser.id || !participantData.isOnline) {
+                return;
+            }
+            
+            console.log(`New participant detected: ${participantData.name} (${participantId})`);
+            
+            // Initialize peer connection to this participant
+            createPeerConnection(participantId, true);
+        });
+        
+        // Listen for participant removals to clean up connections
+        db.ref(`meetings/${meetingID}/participants`).on('child_removed', snapshot => {
+            const participantId = snapshot.key;
+            
+            if (peerConnections[participantId]) {
+                console.log(`Participant removed: ${participantId}, cleaning up connection`);
+                closePeerConnection(participantId);
+            }
+        });
+        
+        // Listen for participant status changes
+        db.ref(`meetings/${meetingID}/participants`).on('child_changed', snapshot => {
+            const participantId = snapshot.key;
+            const participantData = snapshot.val();
+            
+            // If participant went offline, close the connection
+            if (participantId !== currentUser.id && !participantData.isOnline) {
+                console.log(`Participant went offline: ${participantData.name} (${participantId})`);
+                closePeerConnection(participantId);
+            }
+        });
         
         firebaseListenersActive = true;
     } catch (error) {
@@ -850,6 +902,16 @@ function cleanupAndRedirect() {
     sessionStorage.removeItem('userID');
     sessionStorage.removeItem('userName');
     sessionStorage.removeItem('isHost');
+
+
+    // Add this to your cleanupAndRedirect function before redirecting
+// Close all peer connections
+Object.keys(peerConnections).forEach(participantId => {
+    closePeerConnection(participantId);
+});
+
+// Add this to your Firebase listeners cleanup
+db.ref(`meetings/${meetingID}/signals/${currentUser.id}`).off();
 
     // Redirect to main page
     console.log("Redirecting to main.html");
@@ -1267,12 +1329,527 @@ function displayReaction(reaction) {
     }, (duration + delay) * 1000);
 }
 
+
+// Set up WebRTC listeners for signaling
+function setupWebRTCListeners() {
+    if (!isFirebaseInitialized || !meetingID) {
+        console.error("Cannot set up WebRTC: Firebase not initialized or no meeting ID");
+        return;
+    }
+    
+    console.log("Setting up WebRTC listeners for meeting:", meetingID);
+    
+    // Check for existing participants first
+    db.ref(`meetings/${meetingID}/participants`).once('value')
+        .then(snapshot => {
+            const participants = snapshot.val() || {};
+            const onlineParticipants = Object.entries(participants)
+                .filter(([id, data]) => data.isOnline && id !== currentUser.id);
+                
+            console.log(`Found ${onlineParticipants.length} online participants to connect with`);
+            
+            // Manually initiate connections to existing participants
+            onlineParticipants.forEach(([participantId, participantData]) => {
+                console.log(`Initiating connection to: ${participantData.name} (${participantId})`);
+                createPeerConnection(participantId, true);
+            });
+        });
+    
+    // Listen for new participants to initiate connections
+    db.ref(`meetings/${meetingID}/participants`).on('child_added', snapshot => {
+        const participantId = snapshot.key;
+        const participantData = snapshot.val();
+        
+        // Don't connect to self or offline participants
+        if (participantId === currentUser.id || !participantData.isOnline) {
+            return;
+        }
+        
+        console.log(`New participant detected: ${participantData.name} (${participantId})`);
+        
+        // Initialize peer connection to this participant
+        createPeerConnection(participantId, true);
+    });
+    
+    // Listen for participant removals to clean up connections
+    db.ref(`meetings/${meetingID}/participants`).on('child_removed', snapshot => {
+        const participantId = snapshot.key;
+        
+        if (peerConnections[participantId]) {
+            console.log(`Participant removed: ${participantId}, cleaning up connection`);
+            closePeerConnection(participantId);
+        }
+    });
+    
+    // Listen for participant status changes
+    db.ref(`meetings/${meetingID}/participants`).on('child_changed', snapshot => {
+        const participantId = snapshot.key;
+        const participantData = snapshot.val();
+        
+        // If participant went offline, close the connection
+        if (participantId !== currentUser.id && !participantData.isOnline) {
+            console.log(`Participant went offline: ${participantData.name} (${participantId})`);
+            closePeerConnection(participantId);
+        }
+    });
+    
+    // Listen for WebRTC signaling messages
+    db.ref(`meetings/${meetingID}/signals/${currentUser.id}`).on('child_added', snapshot => {
+        const signal = snapshot.val();
+        
+        if (!signal || !signal.from) {
+            console.error("Invalid signal received:", signal);
+            snapshot.ref.remove();
+            return;
+        }
+        
+        console.log(`Received signal from ${signal.from}:`, signal.type);
+        
+        // Process the signal based on its type
+        handleSignal(signal);
+        
+        // Remove the processed signal
+        snapshot.ref.remove();
+    });
+}
+
+
+// Create video element for remote participant
+function createRemoteVideoElement(participantId) {
+    console.log(`Creating video element for ${participantId}`);
+    
+    // Get participant name from Firebase
+    db.ref(`meetings/${meetingID}/participants/${participantId}`).once('value')
+        .then(snapshot => {
+            if (!snapshot.exists()) {
+                console.warn(`Participant ${participantId} not found in database`);
+                return;
+            }
+            
+            const participantData = snapshot.val();
+            const participantName = participantData.name || "Unknown";
+            
+            console.log(`Creating video for ${participantName} (${participantId})`);
+            
+            // Check if element already exists
+            const existingElement = document.querySelector(`.video-wrapper[data-user-id="${participantId}"]`);
+            if (existingElement) {
+                console.log(`Video element for ${participantId} already exists, updating`);
+                return;
+            }
+            
+            // Create video element
+            const videoElement = document.createElement('video');
+            videoElement.autoplay = true;
+            videoElement.playsInline = true;
+            videoElement.classList.add('video-item');
+            
+            // Create video wrapper
+            const videoWrapper = document.createElement('div');
+            videoWrapper.classList.add('video-wrapper');
+            videoWrapper.dataset.userId = participantId;
+            
+            // Create name tag
+            const nameTag = document.createElement('div');
+            nameTag.classList.add('video-name-tag');
+            nameTag.textContent = participantName;
+            
+            // Create media indicators
+            const audioIndicator = document.createElement('div');
+            audioIndicator.classList.add('media-indicator', 'audio-indicator');
+            audioIndicator.innerHTML = `<i class="fas ${participantData.hasAudio ? 'fa-microphone' : 'fa-microphone-slash'}"></i>`;
+            
+            const videoIndicator = document.createElement('div');
+            videoIndicator.classList.add('media-indicator', 'video-indicator');
+            videoIndicator.innerHTML = `<i class="fas ${participantData.hasVideo ? 'fa-video' : 'fa-video-slash'}"></i>`;
+            
+            // Create connection quality indicator
+            const qualityIndicator = document.createElement('div');
+            qualityIndicator.classList.add('connection-quality');
+            qualityIndicator.innerHTML = '<i class="fas fa-signal"></i>';
+            
+            // Add elements to wrapper
+            videoWrapper.appendChild(videoElement);
+            videoWrapper.appendChild(nameTag);
+            videoWrapper.appendChild(audioIndicator);
+            videoWrapper.appendChild(videoIndicator);
+            videoWrapper.appendChild(qualityIndicator);
+            
+            // Add to video container
+            const videoContainer = document.getElementById('video-container');
+            if (videoContainer) {
+                videoContainer.appendChild(videoWrapper);
+            } else {
+                console.error("Video container not found");
+            }
+            
+            // Create placeholder if video is disabled
+            if (!participantData.hasVideo) {
+                const placeholder = document.createElement('div');
+                placeholder.classList.add('video-placeholder');
+                placeholder.textContent = participantName.charAt(0).toUpperCase();
+                videoElement.style.display = 'none';
+                videoWrapper.insertBefore(placeholder, videoElement.nextSibling);
+            }
+            
+            // If we already have a stream for this participant, set it
+            if (remoteStreams[participantId]) {
+                videoElement.srcObject = remoteStreams[participantId];
+            }
+            
+            // Add click handler for fullscreen toggle
+            videoWrapper.addEventListener('click', () => {
+                toggleFullscreen(videoWrapper);
+            });
+        })
+        .catch(error => {
+            console.error(`Error getting participant data for ${participantId}:`, error);
+        });
+}
+
+// Toggle fullscreen for a video element
+function toggleFullscreen(videoWrapper) {
+    if (!videoWrapper) return;
+    
+    if (videoWrapper.classList.contains('fullscreen')) {
+        // Exit fullscreen
+        videoWrapper.classList.remove('fullscreen');
+        
+        // Restore original position in the grid
+        const videoContainer = document.getElementById('video-container');
+        if (videoContainer) {
+            videoContainer.appendChild(videoWrapper);
+        }
+    } else {
+        // Enter fullscreen
+        videoWrapper.classList.add('fullscreen');
+        document.body.appendChild(videoWrapper);
+    }
+}
+
+// Update connection quality indicator
+function updateConnectionQualityIndicator(participantId, state) {
+    const qualityIndicator = document.querySelector(`.video-wrapper[data-user-id="${participantId}"] .connection-quality`);
+    if (!qualityIndicator) return;
+    
+    // Remove existing quality classes
+    qualityIndicator.classList.remove(
+        'quality-excellent', 'quality-good', 'quality-fair', 'quality-poor', 'quality-bad'
+    );
+    
+    // Add appropriate class based on connection state
+    switch (state) {
+        case 'connected':
+            qualityIndicator.classList.add('quality-excellent');
+            qualityIndicator.title = 'Excellent connection';
+            break;
+        case 'completed':
+            qualityIndicator.classList.add('quality-good');
+            qualityIndicator.title = 'Good connection';
+            break;
+        case 'checking':
+            qualityIndicator.classList.add('quality-fair');
+            qualityIndicator.title = 'Connecting...';
+            break;
+        case 'disconnected':
+            qualityIndicator.classList.add('quality-poor');
+            qualityIndicator.title = 'Poor connection';
+            break;
+        case 'failed':
+            qualityIndicator.classList.add('quality-bad');
+            qualityIndicator.title = 'Connection failed';
+            break;
+        default:
+            qualityIndicator.title = 'Unknown connection state';
+    }
+}
+
+// Handle WebRTC signaling message
+function handleSignal(signal) {
+    const senderId = signal.from;
+    
+    if (!senderId) {
+        console.error("Received signal without sender ID");
+        return;
+    }
+    
+    console.log(`Processing ${signal.type} signal from ${senderId}`);
+    
+    switch (signal.type) {
+        case 'offer':
+            handleOffer(senderId, signal.sdp);
+            break;
+            
+        case 'answer':
+            handleAnswer(senderId, signal.sdp);
+            break;
+            
+        case 'ice-candidate':
+            handleIceCandidate(senderId, signal.candidate);
+            break;
+            
+        default:
+            console.warn(`Unknown signal type: ${signal.type}`);
+    }
+}
+
+// Handle WebRTC offer
+function handleOffer(senderId, sdp) {
+    console.log(`Handling offer from ${senderId}`);
+    
+    // Create peer connection if it doesn't exist
+    const peerConnection = createPeerConnection(senderId, false);
+    
+    peerConnection.setRemoteDescription(new RTCSessionDescription(sdp))
+        .then(() => {
+            console.log(`Remote description set for ${senderId}, creating answer`);
+            return peerConnection.createAnswer();
+        })
+        .then(answer => {
+            console.log(`Setting local description for ${senderId}`);
+            return peerConnection.setLocalDescription(answer);
+        })
+        .then(() => {
+            console.log(`Sending answer to ${senderId}`);
+            sendSignal(senderId, {
+                type: 'answer',
+                sdp: peerConnection.localDescription
+            });
+        })
+        .catch(error => {
+            console.error(`Error handling offer from ${senderId}:`, error);
+        });
+}
+
+// Handle WebRTC answer
+function handleAnswer(senderId, sdp) {
+    console.log(`Handling answer from ${senderId}`);
+    
+    const peerConnection = peerConnections[senderId];
+    
+    if (!peerConnection) {
+        console.error(`No peer connection found for ${senderId}`);
+        return;
+    }
+    
+    peerConnection.setRemoteDescription(new RTCSessionDescription(sdp))
+        .then(() => {
+            console.log(`Remote description set for ${senderId} from answer`);
+        })
+        .catch(error => {
+            console.error(`Error setting remote description for ${senderId}:`, error);
+        });
+}
+
+// Handle ICE candidate
+function handleIceCandidate(senderId, candidate) {
+    console.log(`Handling ICE candidate from ${senderId}`);
+    
+    const peerConnection = peerConnections[senderId];
+    
+    if (!peerConnection) {
+        console.warn(`No peer connection found for ${senderId}, storing candidate for later`);
+        
+        // Store the candidate for later use
+        if (!pendingICECandidates[senderId]) {
+            pendingICECandidates[senderId] = [];
+        }
+        
+        pendingICECandidates[senderId].push(candidate);
+        return;
+    }
+    
+    peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+        .then(() => {
+            console.log(`ICE candidate added for ${senderId}`);
+        })
+        .catch(error => {
+            console.error(`Error adding ICE candidate for ${senderId}:`, error);
+        });
+}
+
+// Send WebRTC signaling message
+function sendSignal(recipientId, signal) {
+    if (!isFirebaseInitialized || !meetingID) {
+        console.error("Cannot send signal: Firebase not initialized or no meeting ID");
+        return;
+    }
+    
+    signal.from = currentUser.id;
+    signal.timestamp = firebase.database.ServerValue.TIMESTAMP;
+    
+    console.log(`Sending ${signal.type} signal to ${recipientId}`);
+    
+    db.ref(`meetings/${meetingID}/signals/${recipientId}`).push(signal)
+        .catch(error => {
+            console.error(`Error sending signal to ${recipientId}:`, error);
+        });
+}
+
+// Close and clean up peer connection
+function closePeerConnection(participantId) {
+    console.log(`Closing peer connection with ${participantId}`);
+    
+    // Close peer connection
+    if (peerConnections[participantId]) {
+        peerConnections[participantId].close();
+        delete peerConnections[participantId];
+    }
+    
+    // Remove remote stream
+    if (remoteStreams[participantId]) {
+        delete remoteStreams[participantId];
+    }
+    
+    // Remove video element
+    const videoWrapper = document.querySelector(`.video-wrapper[data-user-id="${participantId}"]`);
+    if (videoWrapper) {
+        videoWrapper.remove();
+    }
+}
+// Create peer connection to another participant
+function createPeerConnection(participantId, isInitiator) {
+    console.log(`Creating ${isInitiator ? 'initiator' : 'receiver'} peer connection to ${participantId}`);
+    
+    // Check if connection already exists
+    if (peerConnections[participantId]) {
+        console.log(`Connection to ${participantId} already exists, reusing`);
+        return peerConnections[participantId];
+    }
+    
+    // Create new RTCPeerConnection
+    const peerConnection = new RTCPeerConnection(configuration);
+    peerConnections[participantId] = peerConnection;
+    
+    // Add local stream tracks to the connection
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            console.log(`Adding ${track.kind} track to connection with ${participantId}`);
+            peerConnection.addTrack(track, localStream);
+        });
+    } else {
+        console.warn(`No local stream available when connecting to ${participantId}`);
+    }
+    
+    // Handle ICE candidates
+    peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+            console.log(`Generated ICE candidate for connection with ${participantId}`);
+            sendSignal(participantId, {
+                type: 'ice-candidate',
+                candidate: event.candidate
+            });
+        } else {
+            console.log(`ICE candidate gathering completed for ${participantId}`);
+        }
+    };
+    
+    // Handle connection state changes
+    peerConnection.onconnectionstatechange = () => {
+        console.log(`Connection state with ${participantId} changed to: ${peerConnection.connectionState}`);
+        
+        // Clean up failed connections
+        if (peerConnection.connectionState === 'failed' || 
+            peerConnection.connectionState === 'closed') {
+            console.warn(`Connection to ${participantId} ${peerConnection.connectionState}, cleaning up`);
+            closePeerConnection(participantId);
+            
+            // Try to reconnect after a delay if participant is still online
+            setTimeout(() => {
+                db.ref(`meetings/${meetingID}/participants/${participantId}`).once('value')
+                    .then(snapshot => {
+                        if (snapshot.exists() && snapshot.val().isOnline) {
+                            console.log(`Attempting to reconnect to ${participantId}`);
+                            createPeerConnection(participantId, true);
+                        }
+                    });
+            }, 2000);
+        }
+    };
+    
+    // Handle ICE connection state changes
+    peerConnection.oniceconnectionstatechange = () => {
+        console.log(`ICE connection state with ${participantId} changed to: ${peerConnection.iceConnectionState}`);
+        
+        // Update UI to show connection quality
+        updateConnectionQualityIndicator(participantId, peerConnection.iceConnectionState);
+    };
+    
+    // Handle tracks from remote peer
+    peerConnection.ontrack = (event) => {
+        console.log(`Received ${event.track.kind} track from ${participantId}`);
+        
+        // Create or update remote stream
+        if (!remoteStreams[participantId]) {
+            remoteStreams[participantId] = new MediaStream();
+            createRemoteVideoElement(participantId);
+        }
+        
+        // Add the track to the remote stream
+        remoteStreams[participantId].addTrack(event.track);
+        
+        // Update the video element with the stream
+        const remoteVideo = document.querySelector(`.video-wrapper[data-user-id="${participantId}"] video`);
+        if (remoteVideo) {
+            remoteVideo.srcObject = remoteStreams[participantId];
+        }
+    };
+    
+    // If we're the initiator, create and send an offer
+    if (isInitiator) {
+        console.log(`Creating offer for ${participantId}`);
+        
+        peerConnection.createOffer()
+            .then(offer => {
+                console.log(`Setting local description for ${participantId}`);
+                return peerConnection.setLocalDescription(offer);
+            })
+            .then(() => {
+                console.log(`Sending offer to ${participantId}`);
+                sendSignal(participantId, {
+                    type: 'offer',
+                    sdp: peerConnection.localDescription
+                });
+            })
+            .catch(error => {
+                console.error(`Error creating/sending offer to ${participantId}:`, error);
+            });
+    }
+    
+    // If we have pending ICE candidates for this peer, add them now
+    if (pendingICECandidates[participantId]) {
+        console.log(`Adding ${pendingICECandidates[participantId].length} pending ICE candidates for ${participantId}`);
+        
+        pendingICECandidates[participantId].forEach(candidate => {
+            peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+                .catch(error => {
+                    console.error(`Error adding pending ICE candidate for ${participantId}:`, error);
+                });
+        });
+        
+        delete pendingICECandidates[participantId];
+    }
+    
+    return peerConnection;
+}
+
 // Connect to participants (WebRTC)
 function connectToParticipants() {
-    console.log("WebRTC connection functionality would be implemented here");
-    // This would implement the WebRTC peer connection logic
-    // For now, we're focusing on fixing the basic functionality
+    console.log("Connecting to participants via WebRTC");
+    
+    if (!localStream) {
+        console.error("Cannot connect to participants: No local stream available");
+        return;
+    }
+    
+    // Save references to tracks for later use
+    localVideoTrack = localStream.getVideoTracks()[0];
+    localAudioTrack = localStream.getAudioTracks()[0];
+    
+    // Set up WebRTC listeners for signaling
+    setupWebRTCListeners();
 }
+
 
 // Add this to make sure the window closing triggers cleanup
 window.addEventListener('beforeunload', function(e) {

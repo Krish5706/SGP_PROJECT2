@@ -296,7 +296,7 @@ body {
 /* Responsive Profile Box */
 @media (max-width: 768px) {
     .profile-box {
-        width: 90%;
+        width: 100%;
         right: 5%;
     }
 }
@@ -305,3 +305,4 @@ body {
 .hidden {
     display: none;
 }
+

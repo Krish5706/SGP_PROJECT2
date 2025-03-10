@@ -1876,3 +1876,1245 @@ window.addEventListener('beforeunload', function(e) {
         screenStream.getTracks().forEach(track => track.stop());
     }
 });
+
+/**
+ * WebRTC Multi-Connection Manager
+ * Efficiently handles multiple peer connections with adaptive quality scaling
+ */
+(function() {
+    // Configuration
+    const CONNECTION_MANAGER_CONFIG = {
+      maxConnectionRetries: 3,
+      connectionTimeout: 30000,  // 30 seconds before considering a connection attempt failed
+      bandwidthLimits: {
+        lowParticipants: {count: 4, videoBitrate: 800000, resolution: {width: 640, height: 480}},  // 4 or fewer: 800kbps, 640x480
+        mediumParticipants: {count: 8, videoBitrate: 400000, resolution: {width: 320, height: 240}},  // 5-8: 400kbps, 320x240
+        highParticipants: {count: 15, videoBitrate: 200000, resolution: {width: 160, height: 120}}   // 9+: 200kbps, 160x120
+      },
+      statsUpdateInterval: 5000,
+      enableSimulcast: false  // Set to true to enable simulcast for supported browsers
+    };
+  
+    // Internal state
+    const connectionState = {
+      peerConnectionStates: {},
+      connectionRetries: {},
+      connectionTimeouts: {},
+      connectionStats: {},
+      activeBandwidthProfile: 'lowParticipants'
+    };
+  
+    // Initialize Manager
+    function initializeManager() {
+      console.log("Initializing WebRTC Multi-Connection Manager...");
+      
+      // Create bandwith control 
+      setupBandwidthAdaptation();
+      
+      // Setup connection monitoring
+      setupConnectionMonitoring();
+      
+      // Enhance and proxy existing connection methods
+      enhanceCreatePeerConnection();
+      enhanceCloseConnection();
+      
+      // Setup connection statistics
+      setupConnectionStats();
+      
+      // Add connection health indicators
+      addConnectionHealthIndicators();
+      
+      console.log("WebRTC Multi-Connection Manager initialized");
+    }
+    
+    // Enhance the createPeerConnection function using proxy pattern
+    function enhanceCreatePeerConnection() {
+      const originalCreatePeerConnection = window.createPeerConnection;
+      
+      window.createPeerConnection = function(participantId, isInitiator) {
+        console.log(`Enhanced connection creation for participant ${participantId}`);
+        
+        // Start connection timeout tracking
+        startConnectionTimeout(participantId);
+        
+        // Create the connection using original function
+        const peerConnection = originalCreatePeerConnection(participantId, isInitiator);
+        
+        // Add enhanced event handlers
+        enhanceConnectionEventHandlers(peerConnection, participantId, isInitiator);
+        
+        // Apply current bandwidth limits
+        applyBandwidthLimits(peerConnection, participantId);
+        
+        // Initialize connection state tracking
+        connectionState.peerConnectionStates[participantId] = {
+          id: participantId,
+          state: peerConnection.connectionState || 'new',
+          iceState: peerConnection.iceConnectionState || 'new',
+          createTime: Date.now(),
+          isInitiator: isInitiator,
+          negotiationNeeded: false,
+          restartRequired: false,
+          lastActivity: Date.now()
+        };
+        
+        return peerConnection;
+      };
+    }
+    
+    // Add enhanced event handlers to the connection
+    function enhanceConnectionEventHandlers(peerConnection, participantId, isInitiator) {
+      // Track ICE gathering state with more detailed logging
+      peerConnection.addEventListener('icegatheringstatechange', () => {
+        const state = peerConnection.iceGatheringState;
+        console.log(`ICE gathering state for ${participantId}: ${state}`);
+        
+        updateConnectionState(participantId, 'iceGatheringState', state);
+        
+        // UI feedback for gathering state
+        updateConnectionUIStatus(participantId, 'gathering', state);
+      });
+      
+      // Enhanced ICE connection state tracking
+      const originalIceHandler = peerConnection.oniceconnectionstatechange;
+      peerConnection.oniceconnectionstatechange = function(event) {
+        const state = peerConnection.iceConnectionState;
+        console.log(`Enhanced ICE connection state handler for ${participantId}: ${state}`);
+        
+        // Call original handler if it exists
+        if (typeof originalIceHandler === 'function') {
+          originalIceHandler.call(this, event);
+        }
+        
+        // Additional handling for better recovery and UI feedback
+        updateConnectionState(participantId, 'iceState', state);
+        
+        // Track failed/disconnected states for recovery
+        if (state === 'failed' || state === 'disconnected') {
+          handleConnectionFailure(participantId, peerConnection, state);
+        } else if (state === 'connected' || state === 'completed') {
+          // Clear recovery state on successful connection
+          clearConnectionRecoveryState(participantId);
+        }
+      };
+      
+      // Enhanced connection state tracking
+      const originalConnectionHandler = peerConnection.onconnectionstatechange;
+      peerConnection.onconnectionstatechange = function(event) {
+        const state = peerConnection.connectionState;
+        console.log(`Enhanced connection state handler for ${participantId}: ${state}`);
+        
+        // Call original handler if it exists
+        if (typeof originalConnectionHandler === 'function') {
+          originalConnectionHandler.call(this, event);
+        }
+        
+        // Additional handling
+        updateConnectionState(participantId, 'state', state);
+        
+        // Update UI with detailed connection state
+        updateConnectionUIStatus(participantId, 'connection', state);
+        
+        // Clear connection timeout if connected
+        if (state === 'connected') {
+          clearConnectionTimeout(participantId);
+        }
+      };
+      
+      // Enhanced negotiation needed - handle renegotiation more robustly
+      peerConnection.onnegotiationneeded = () => {
+        console.log(`Negotiation needed for ${participantId}`);
+        
+        updateConnectionState(participantId, 'negotiationNeeded', true);
+        
+        // Only handle negotiation if we're the initiator
+        if (isInitiator) {
+          handleRenegotiation(participantId, peerConnection);
+        }
+      };
+      
+      // Enhanced track handler for better UI updates
+      const originalTrackHandler = peerConnection.ontrack;
+      peerConnection.ontrack = function(event) {
+        console.log(`Enhanced track handler for ${participantId}, kind: ${event.track.kind}`);
+        
+        // Call original handler
+        if (typeof originalTrackHandler === 'function') {
+          originalTrackHandler.call(this, event);
+        }
+        
+        // Add track ended handler for better recovery
+        event.track.onended = () => {
+          console.log(`Track ${event.track.kind} from ${participantId} ended`);
+          updateConnectionUIStatus(participantId, 'track', 'ended');
+        };
+        
+        // Update UI
+        updateConnectionUIStatus(participantId, 'track', 'added');
+        
+        // Update last activity timestamp
+        updateConnectionState(participantId, 'lastActivity', Date.now());
+      };
+    }
+    
+    // Handle connection failure with retries
+    function handleConnectionFailure(participantId, peerConnection, state) {
+      console.log(`Connection failure handling for ${participantId} (${state})`);
+      
+      // Initialize retry counter if needed
+      if (!connectionState.connectionRetries[participantId]) {
+        connectionState.connectionRetries[participantId] = 0;
+      }
+      
+      // Check if we've maxed out retries
+      if (connectionState.connectionRetries[participantId] >= CONNECTION_MANAGER_CONFIG.maxConnectionRetries) {
+        console.log(`Max retries (${CONNECTION_MANAGER_CONFIG.maxConnectionRetries}) reached for ${participantId}, giving up`);
+        updateConnectionUIStatus(participantId, 'failure', 'permanent');
+        return;
+      }
+      
+      // Increment retry counter
+      connectionState.connectionRetries[participantId]++;
+      
+      // Update UI to show reconnection attempt
+      updateConnectionUIStatus(participantId, 'failure', 'retrying');
+      
+      console.log(`Attempting reconnection for ${participantId} (attempt ${connectionState.connectionRetries[participantId]})`);
+      
+      // For ICE failures, try ICE restart first
+      if (state === 'failed' && peerConnection.restartIce) {
+        console.log(`Attempting ICE restart for ${participantId}`);
+        try {
+          peerConnection.restartIce();
+          
+          // Mark connection for restart if this doesn't work
+          updateConnectionState(participantId, 'restartRequired', true);
+          
+          // Set a timer to check if restart worked
+          setTimeout(() => {
+            checkRestartSuccess(participantId, peerConnection);
+          }, 5000);
+          
+          return;
+        } catch (err) {
+          console.error(`ICE restart failed for ${participantId}:`, err);
+          // Fall through to full reconnection
+        }
+      }
+      
+      // For persistent failures, recreate the connection
+      setTimeout(() => {
+        recreateConnection(participantId);
+      }, 1000 * connectionState.connectionRetries[participantId]); // Increasing backoff
+    }
+    
+    // Check if restart was successful
+    function checkRestartSuccess(participantId, peerConnection) {
+      const currentState = connectionState.peerConnectionStates[participantId];
+      
+      // If connection is still failed and marked for restart
+      if (currentState && currentState.restartRequired && 
+          (peerConnection.iceConnectionState === 'failed' || 
+           peerConnection.iceConnectionState === 'disconnected')) {
+        
+        console.log(`ICE restart did not fix connection to ${participantId}, recreating connection`);
+        recreateConnection(participantId);
+      } else if (currentState) {
+        // Clear restart flag if connection recovered
+        updateConnectionState(participantId, 'restartRequired', false);
+      }
+    }
+    
+    // Recreate a failed connection from scratch
+    function recreateConnection(participantId) {
+      console.log(`Recreating connection to ${participantId}`);
+      
+      // Only proceed if the connection still exists and participant is still online
+      checkParticipantOnline(participantId).then(isOnline => {
+        if (!isOnline) {
+          console.log(`Participant ${participantId} is offline, cancelling reconnection`);
+          return;
+        }
+        
+        // Close existing connection
+        closePeerConnection(participantId);
+        
+        // Create a new connection - this will call our enhanced createPeerConnection
+        console.log(`Creating new connection to ${participantId}`);
+        createPeerConnection(participantId, true);
+      });
+    }
+    
+    // Check if a participant is still online via Firebase
+    function checkParticipantOnline(participantId) {
+      return new Promise((resolve) => {
+        // Check if we can access Firebase
+        if (!isFirebaseInitialized || !meetingID) {
+          console.warn("Cannot check participant status: Firebase not available");
+          resolve(true); // Assume online if we can't check
+          return;
+        }
+        
+        // Query Firebase for participant status
+        db.ref(`meetings/${meetingID}/participants/${participantId}`).once('value')
+          .then(snapshot => {
+            if (snapshot.exists()) {
+              const participant = snapshot.val();
+              resolve(participant.isOnline === true);
+            } else {
+              resolve(false);
+            }
+          })
+          .catch(error => {
+            console.error(`Error checking participant online status:`, error);
+            resolve(true); // Assume online on error
+          });
+      });
+    }
+    
+    // Clear connection recovery state
+    function clearConnectionRecoveryState(participantId) {
+      delete connectionState.connectionRetries[participantId];
+      
+      if (connectionState.peerConnectionStates[participantId]) {
+        connectionState.peerConnectionStates[participantId].restartRequired = false;
+      }
+      
+      updateConnectionUIStatus(participantId, 'recovery', 'success');
+    }
+    
+    // Start a timeout to detect failed connection attempts
+    function startConnectionTimeout(participantId) {
+      // Clear any existing timeout
+      clearConnectionTimeout(participantId);
+      
+      // Set new timeout
+      connectionState.connectionTimeouts[participantId] = setTimeout(() => {
+        // Check if connection succeeded
+        const connection = peerConnections[participantId];
+        if (connection && 
+            connection.iceConnectionState !== 'connected' && 
+            connection.iceConnectionState !== 'completed') {
+          
+          console.warn(`Connection timeout for ${participantId}`);
+          handleConnectionFailure(participantId, connection, 'timeout');
+        }
+      }, CONNECTION_MANAGER_CONFIG.connectionTimeout);
+    }
+    
+    // Clear connection timeout
+    function clearConnectionTimeout(participantId) {
+      if (connectionState.connectionTimeouts[participantId]) {
+        clearTimeout(connectionState.connectionTimeouts[participantId]);
+        delete connectionState.connectionTimeouts[participantId];
+      }
+    }
+    
+    // Handle renegotiation needs
+    function handleRenegotiation(participantId, peerConnection) {
+      console.log(`Handling renegotiation for ${participantId}`);
+      
+      // Only proceed if connection is in a valid state for negotiation
+      if (peerConnection.signalingState === 'closed') {
+        console.warn(`Cannot renegotiate closed connection to ${participantId}`);
+        return;
+      }
+      
+      // Reset negotiation needed flag
+      updateConnectionState(participantId, 'negotiationNeeded', false);
+      
+      // Create a new offer
+      peerConnection.createOffer()
+        .then(offer => {
+          // Apply bandwidth restrictions if needed
+          if (CONNECTION_MANAGER_CONFIG.enableSimulcast) {
+            offer = modifyOfferForSimulcast(offer);
+          }
+          
+          // Set as local description
+          return peerConnection.setLocalDescription(offer);
+        })
+        .then(() => {
+          console.log(`Sending renegotiation offer to ${participantId}`);
+          
+          // Send via signaling channel
+          sendSignal(participantId, {
+            type: 'offer',
+            sdp: peerConnection.localDescription
+          });
+        })
+        .catch(error => {
+          console.error(`Error during renegotiation with ${participantId}:`, error);
+          updateConnectionState(participantId, 'negotiationNeeded', true); // Flag for retry
+        });
+    }
+    
+    // Modify SDP offer to support simulcast (for browsers that support it)
+    function modifyOfferForSimulcast(offer) {
+      // This is a simplified implementation - a full implementation would
+      // parse and modify the SDP to add simulcast parameters
+      if (offer.sdp && navigator.userAgent.toLowerCase().indexOf('chrome') > -1) {
+        console.log('Adding simulcast parameters to offer');
+        // Example only - actual implementation would be more complex
+        const sdpLines = offer.sdp.split('\r\n');
+        const videoIndex = sdpLines.findIndex(line => line.startsWith('m=video'));
+        
+        if (videoIndex !== -1) {
+          // Add simulcast attributes (simplified)
+          const simulcastLine = 'a=simulcast:send rid=high;mid;low';
+          sdpLines.splice(videoIndex + 1, 0, simulcastLine);
+          offer.sdp = sdpLines.join('\r\n');
+        }
+      }
+      return offer;
+    }
+    
+    // Update connection state tracking
+    function updateConnectionState(participantId, property, value) {
+      // Initialize state object if needed
+      if (!connectionState.peerConnectionStates[participantId]) {
+        connectionState.peerConnectionStates[participantId] = {
+          id: participantId,
+          state: 'new',
+          iceState: 'new',
+          createTime: Date.now(),
+          lastActivity: Date.now()
+        };
+      }
+      
+      // Update the property
+      connectionState.peerConnectionStates[participantId][property] = value;
+      
+      // Update last activity for certain properties
+      if (property === 'state' || property === 'iceState') {
+        connectionState.peerConnectionStates[participantId].lastActivity = Date.now();
+      }
+    }
+    
+    // Update connection UI with detailed status
+    function updateConnectionUIStatus(participantId, statusType, value) {
+      // Find the participant's video container
+      const videoWrapper = document.querySelector(`.video-wrapper[data-user-id="${participantId}"]`);
+      if (!videoWrapper) return;
+      
+      // Handle different status types
+      switch (statusType) {
+        case 'connection':
+          updateConnectionIndicator(videoWrapper, value);
+          break;
+        case 'gathering':
+          updateGatheringIndicator(videoWrapper, value);
+          break;
+        case 'track':
+          updateTrackStatus(videoWrapper, value);
+          break;
+        case 'failure':
+          updateFailureStatus(videoWrapper, value);
+          break;
+        case 'recovery':
+          updateRecoveryStatus(videoWrapper, value);
+          break;
+      }
+    }
+    
+    // Update connection indicator in UI
+    function updateConnectionIndicator(videoWrapper, state) {
+      // Get or create quality indicator
+      let indicator = videoWrapper.querySelector('.connection-quality');
+      if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.className = 'connection-quality';
+        indicator.innerHTML = '<i class="fas fa-signal"></i>';
+        videoWrapper.appendChild(indicator);
+      }
+      
+      // Remove existing state classes
+      indicator.classList.remove(
+        'quality-excellent', 'quality-good', 'quality-fair', 
+        'quality-poor', 'quality-bad', 'quality-unknown'
+      );
+      
+      // Add appropriate class based on state
+      let stateClass, tooltip;
+      switch (state) {
+        case 'connected':
+          stateClass = 'quality-good';
+          tooltip = 'Connected';
+          break;
+        case 'completed':
+          stateClass = 'quality-excellent';
+          tooltip = 'Strong connection';
+          break;
+        case 'checking':
+          stateClass = 'quality-fair';
+          tooltip = 'Establishing connection...';
+          break;
+        case 'disconnected':
+          stateClass = 'quality-poor';
+          tooltip = 'Connection interrupted';
+          break;
+        case 'failed':
+          stateClass = 'quality-bad';
+          tooltip = 'Connection failed';
+          break;
+        default:
+          stateClass = 'quality-unknown';
+          tooltip = `Status: ${state}`;
+      }
+      
+      indicator.classList.add(stateClass);
+      indicator.title = tooltip;
+    }
+    
+    // Update ICE gathering indicator
+    function updateGatheringIndicator(videoWrapper, state) {
+      // We could add a visual indicator for ICE gathering state
+      // but for simplicity we'll just update the tooltip on the connection indicator
+      const indicator = videoWrapper.querySelector('.connection-quality');
+      if (indicator) {
+        if (state === 'gathering') {
+          indicator.title += ' (Establishing connection...)';
+        }
+      }
+    }
+    
+    // Update track status indicator
+    function updateTrackStatus(videoWrapper, status) {
+      // For demonstration, we'll just handle track ended status
+      if (status === 'ended') {
+        const notification = document.createElement('div');
+        notification.className = 'track-ended-notification';
+        notification.textContent = 'Media stream ended';
+        notification.style.cssText = `
+          position: absolute;
+          bottom: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-size: 12px;
+          z-index: 10;
+        `;
+        
+        videoWrapper.appendChild(notification);
+        
+        // Remove after a few seconds
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 5000);
+      }
+    }
+    
+    // Update failure status in UI
+    function updateFailureStatus(videoWrapper, status) {
+      // Remove any existing failure notification
+      const existingNotification = videoWrapper.querySelector('.connection-failure-notification');
+      if (existingNotification) {
+        existingNotification.remove();
+      }
+      
+      if (status === 'retrying') {
+        const notification = document.createElement('div');
+        notification.className = 'connection-failure-notification';
+        notification.innerHTML = `
+          <div>Reconnecting...</div>
+          <div class="reconnecting-spinner"></div>
+        `;
+        notification.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 10px 15px;
+          border-radius: 4px;
+          text-align: center;
+          z-index: 10;
+        `;
+        
+        // Add spinner style
+        const style = document.createElement('style');
+        style.textContent = `
+          .reconnecting-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin: 5px auto 0;
+          }
+          
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        videoWrapper.appendChild(notification);
+      } else if (status === 'permanent') {
+        const notification = document.createElement('div');
+        notification.className = 'connection-failure-notification';
+        notification.textContent = 'Connection failed';
+        notification.style.cssText = `
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 10px 15px;
+          border-radius: 4px;
+          z-index: 10;
+        `;
+        
+        videoWrapper.appendChild(notification);
+        
+        // Add a faded overlay
+        videoWrapper.style.opacity = '0.6';
+      }
+    }
+    
+    // Update recovery status in UI
+    function updateRecoveryStatus(videoWrapper, status) {
+      if (status === 'success') {
+        // Remove any failure notifications
+        const notification = videoWrapper.querySelector('.connection-failure-notification');
+        if (notification) {
+          notification.remove();
+        }
+        
+        // Reset opacity
+        videoWrapper.style.opacity = '1';
+        
+        // Show brief success message
+        const successNotification = document.createElement('div');
+        successNotification.className = 'connection-success-notification';
+        successNotification.textContent = 'Connection restored';
+        successNotification.style.cssText = `
+          position: absolute;
+          bottom: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(76, 175, 80, 0.9);
+          color: white;
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-size: 12px;
+          z-index: 10;
+          animation: fadeOut 3s forwards;
+        `;
+        
+        // Add animation
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes fadeOut {
+            0%, 50% { opacity: 1; }
+            100% { opacity: 0; }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        videoWrapper.appendChild(successNotification);
+        
+        // Remove after animation completes
+        setTimeout(() => {
+          if (successNotification.parentNode) {
+            successNotification.parentNode.removeChild(successNotification);
+          }
+        }, 3000);
+      }
+    }
+    
+    // Enhance close connection function
+    function enhanceCloseConnection() {
+      const originalCloseConnection = window.closePeerConnection;
+      
+      window.closePeerConnection = function(participantId) {
+        console.log(`Enhanced close connection for ${participantId}`);
+        
+        // Clean up our state tracking
+        delete connectionState.peerConnectionStates[participantId];
+        delete connectionState.connectionRetries[participantId];
+        clearConnectionTimeout(participantId);
+        delete connectionState.connectionStats[participantId];
+        
+        // Call original function
+        return originalCloseConnection(participantId);
+      };
+    }
+    
+    // Set up bandwidth adaptation based on number of connections
+    function setupBandwidthAdaptation() {
+      console.log("Setting up bandwidth adaptation");
+      
+      // Check active connections periodically and adjust bandwidth profile
+      setInterval(() => {
+        adaptBandwidthToConnectionCount();
+      }, 10000); // Check every 10 seconds
+    }
+    
+    // Adapt bandwidth based on number of connections
+    function adaptBandwidthToConnectionCount() {
+      // Count active connections
+      const connectionCount = Object.keys(peerConnections).length;
+      console.log(`Adapting bandwidth for ${connectionCount} connections`);
+      
+      // Determine appropriate profile
+      let newProfile;
+      const limits = CONNECTION_MANAGER_CONFIG.bandwidthLimits;
+      
+      if (connectionCount <= limits.lowParticipants.count) {
+        newProfile = 'lowParticipants';
+      } else if (connectionCount <= limits.mediumParticipants.count) {
+        newProfile = 'mediumParticipants';
+      } else {
+        newProfile = 'highParticipants';
+      }
+      
+      // Only change if profile is different
+      if (newProfile !== connectionState.activeBandwidthProfile) {
+        console.log(`Changing bandwidth profile from ${connectionState.activeBandwidthProfile} to ${newProfile}`);
+        connectionState.activeBandwidthProfile = newProfile;
+        
+        // Apply to all connections
+        Object.entries(peerConnections).forEach(([participantId, connection]) => {
+          applyBandwidthLimits(connection, participantId);
+        });
+        
+        // Apply to local video track if possible
+        applyLocalVideoConstraints(limits[newProfile].resolution);
+      }
+    }
+    
+    // Apply bandwidth limits to a peer connection
+    function applyBandwidthLimits(peerConnection, participantId) {
+      try {
+        const profile = connectionState.activeBandwidthProfile;
+        const bitrate = CONNECTION_MANAGER_CONFIG.bandwidthLimits[profile].videoBitrate;
+        
+        console.log(`Applying ${bitrate}bps limit to connection with ${participantId}`);
+        
+        // Get sender for video track
+        const sender = peerConnection.getSenders().find(s => 
+          s.track && s.track.kind === 'video'
+        );
+        
+        if (sender) {
+          const parameters = sender.getParameters();
+          
+          // Check if we can modify parameters
+          if (!parameters.encodings) {
+            parameters.encodings = [{}];
+          }
+          
+          // Set max bitrate constraint
+          parameters.encodings.forEach(encoding => {
+            encoding.maxBitrate = bitrate;
+          });
+          
+          // Apply changes
+          sender.setParameters(parameters)
+            .then(() => {
+              console.log(`Successfully applied bandwidth limit to ${participantId}`);
+            })
+            .catch(error => {
+              console.error(`Error applying bandwidth limit to ${participantId}:`, error);
+            });
+        }
+      } catch (error) {
+        console.error(`Error in applyBandwidthLimits for ${participantId}:`, error);
+      }
+    }
+    
+    // Apply resolution constraints to local video
+    function applyLocalVideoConstraints(resolution) {
+      if (!localStream) return;
+      
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (!videoTrack) return;
+      
+      console.log(`Applying resolution constraints: ${resolution.width}x${resolution.height}`);
+      
+      videoTrack.applyConstraints({
+        width: { ideal: resolution.width },
+        height: { ideal: resolution.height }
+      }).then(() => {
+        console.log("Video constraints applied successfully");
+      }).catch(error => {
+        console.error("Error applying video constraints:", error);
+      });
+    }
+    
+    // Set up connection monitoring
+    function setupConnectionMonitoring() {
+      console.log("Setting up connection monitoring");
+      
+      // Periodically check for stale connections
+      setInterval(() => {
+        monitorConnections();
+      }, 15000); // Every 15 seconds
+    }
+    
+    // Monitor connections for problems
+    function monitorConnections() {
+      const now = Date.now();
+      
+      Object.entries(connectionState.peerConnectionStates).forEach(([participantId, state]) => {
+        // Check for stale connections
+        const timeSinceActivity = now - state.lastActivity;
+        
+        if (timeSinceActivity > 60000) { // No activity for 1 minute
+          console.warn(`Connection to ${participantId} has been inactive for ${Math.round(timeSinceActivity/1000)}s`);
+          
+          // Get current connection
+          const connection = peerConnections[participantId];
+          if (!connection) return;
+          
+          // Check if still in problem state
+          if (connection.iceConnectionState === 'disconnected' || 
+              connection.iceConnectionState === 'failed' ||
+              connection.connectionState === 'disconnected' ||
+              connection.connectionState === 'failed') {
+            
+            console.log(`Connection to ${participantId} is in problem state, triggering recovery`);
+            handleConnectionFailure(participantId, connection, connection.iceConnectionState);
+          }
+        }
+        
+        // Check for unhandled negotiation needed
+        if (state.negotiationNeeded) {
+          console.log(`Unhandled negotiation needed for ${participantId}`);
+          
+          // Only handle if we're the initiator
+          if (state.isInitiator) {
+            const connection = peerConnections[participantId];
+            if (connection) {
+              handleRenegotiation(participantId, connection);
+            }
+          }
+        }
+      });
+    }
+    
+    // Setup connection statistics gathering
+    function setupConnectionStats() {
+      console.log("Setting up connection statistics gathering");
+      
+      // Periodically gather stats
+      setInterval(() => {
+        gatherConnectionStats();
+      }, CONNECTION_MANAGER_CONFIG.statsUpdateInterval);
+    }
+    
+    // Gather statistics from all connections
+    function gatherConnectionStats() {
+      Object.entries(peerConnections).forEach(([participantId, connection]) => {
+        // Skip if connection is closed
+        if (connection.connectionState === 'closed') return;
+        
+        // Get stats
+        connection.getStats()
+          .then(stats => {
+            processConnectionStats(participantId, stats);
+          })
+          .catch(error => {
+            console.error(`Error getting stats from ${participantId}:`, error);
+          });
+      });
+    }
+    
+    // Process connection statistics
+    function processConnectionStats(participantId, stats) {
+      // Initialize stats object if needed
+      if (!connectionState.connectionStats[participantId]) {
+        connectionState.connectionStats[participantId] = {
+          bytesReceived: 0,
+          bytesSent: 0,
+          packetsReceived: 0,
+          packetsSent: 0,
+          packetsLost: 0,
+          timestamp: Date.now(),
+          bitrateReceived: 0,
+          bitrateSent: 0,
+          packetLossRate: 0,
+          frameRate: 0,
+          roundTripTime: 0
+        };
+      }
+      
+      const previousStats = connectionState.connectionStats[participantId];
+      const currentStats = {
+        bytesReceived: 0,
+        bytesSent: 0,
+        packetsReceived: 0,
+        packetsSent: 0,
+        packetsLost: 0,
+        timestamp: Date.now(),
+        frameRate: 0,
+        roundTripTime: 0
+      };
+      
+      // Extract relevant stats
+      stats.forEach(report => {
+        if (report.type === 'inbound-rtp' && report.kind === 'video') {
+          currentStats.bytesReceived += report.bytesReceived || 0;
+          currentStats.packetsReceived += report.packetsReceived || 0;
+          currentStats.packetsLost += report.packetsLost || 0;
+          currentStats.frameRate = report.framesPerSecond || 0;
+        } else if (report.type === 'outbound-rtp' && report.kind === 'video') {
+          currentStats.bytesSent += report.bytesSent || 0;
+          currentStats.packetsSent += report.packetsSent || 0;
+        } else if (report.type === 'remote-inbound-rtp') {
+          currentStats.roundTripTime = report.roundTripTime || 0;
+        }
+      });
+      
+      // Calculate derived statistics
+      const timeDelta = (currentStats.timestamp - previousStats.timestamp) / 1000; // in seconds
+      if (timeDelta > 0) {
+        currentStats.bitrateReceived = 8 * (currentStats.bytesReceived - previousStats.bytesReceived) / timeDelta; // bps
+        currentStats.bitrateSent = 8 * (currentStats.bytesSent - previousStats.bytesSent) / timeDelta; // bps
+        
+        const packetsDelta = currentStats.packetsReceived - previousStats.packetsReceived;
+        if (packetsDelta > 0) {
+          const packetsLostDelta = currentStats.packetsLost - previousStats.packetsLost;
+          currentStats.packetLossRate = (packetsLostDelta / (packetsDelta + packetsLostDelta)) * 100; // percentage
+        }
+      }
+      
+      // Update connection stats
+      connectionState.connectionStats[participantId] = currentStats;
+      
+      // Update UI with stats
+      updateConnectionStatsUI(participantId, currentStats);
+    }
+    
+    // Update UI with connection statistics
+    function updateConnectionStatsUI(participantId, stats) {
+      const qualityIndicator = document.querySelector(`.video-wrapper[data-user-id="${participantId}"] .connection-quality`);
+      if (!qualityIndicator) return;
+      
+      // Build tooltip with stats
+      const tooltip = [
+        `Received: ${Math.round(stats.bitrateReceived / 1000)} kbps`,
+        `Sent: ${Math.round(stats.bitrateSent / 1000)} kbps`,
+        `Packet Loss: ${stats.packetLossRate.toFixed(1)}%`,
+        `Latency: ${(stats.roundTripTime * 1000).toFixed(0)} ms`,
+        `Frame Rate: ${stats.frameRate.toFixed(0)} fps`
+      ].join('\n');
+      
+      qualityIndicator.title = tooltip;
+      
+      // Update indicator color based on stats
+      let qualityClass = 'quality-excellent';
+      
+      if (stats.packetLossRate > 5 || stats.roundTripTime > 0.3) {
+        qualityClass = 'quality-poor';
+      } else if (stats.packetLossRate > 2 || stats.roundTripTime > 0.15) {
+        qualityClass = 'quality-fair';
+      } else if (stats.packetLossRate > 0.5 || stats.roundTripTime > 0.1) {
+        qualityClass = 'quality-good';
+      }
+      
+      // Remove existing quality classes
+      qualityIndicator.classList.remove(
+        'quality-excellent', 'quality-good', 'quality-fair', 
+        'quality-poor', 'quality-bad', 'quality-unknown'
+      );
+      
+      // Add new class
+      qualityIndicator.classList.add(qualityClass);
+    }
+    
+    // Add connection health indicators to UI
+    function addConnectionHealthIndicators() {
+      console.log("Adding connection health indicators");
+      
+      // Add global connection health indicator
+      addGlobalConnectionHealthIndicator();
+      
+      // Add styles
+      addConnectionHealthStyles();
+    }
+    
+    // Add global connection health indicator
+    function addGlobalConnectionHealthIndicator() {
+      const indicator = document.createElement('div');
+      indicator.id = 'global-connection-health';
+      indicator.className = 'global-connection-health';
+      indicator.innerHTML = `
+        <div class="health-icon"><i class="fas fa-network-wired"></i></div>
+        <div class="health-status">Checking connections...</div>
+      `;
+      indicator.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        z-index: 900;
+      `;
+      
+      document.body.appendChild(indicator);
+      
+      // Update periodically
+      setInterval(() => {
+        updateGlobalHealthIndicator();
+      }, 5000);
+    }
+    
+    // Update global health indicator
+    function updateGlobalHealthIndicator() {
+      const indicator = document.getElementById('global-connection-health');
+      if (!indicator) return;
+      
+      // Count connection states
+      const states = {
+        connected: 0,
+        connecting: 0,
+        failed: 0,
+        total: Object.keys(peerConnections).length
+      };
+      
+      Object.values(peerConnections).forEach(connection => {
+        if (connection.iceConnectionState === 'connected' || 
+            connection.iceConnectionState === 'completed') {
+          states.connected++;
+        } else if (connection.iceConnectionState === 'failed') {
+          states.failed++;
+        } else {
+          states.connecting++;
+        }
+      });
+      
+      // Update indicator
+      const healthIcon = indicator.querySelector('.health-icon i');
+      const healthStatus = indicator.querySelector('.health-status');
+      
+      if (states.failed > 0) {
+        healthIcon.className = 'fas fa-exclamation-triangle';
+        healthIcon.style.color = '#ff9800';
+        healthStatus.textContent = `${states.connected}/${states.total} connections active`;
+      } else if (states.connecting > 0) {
+        healthIcon.className = 'fas fa-sync fa-spin';
+        healthIcon.style.color = '#2196F3';
+        healthStatus.textContent = `${states.connected}/${states.total} connections active`;
+      } else if (states.total === 0) {
+        healthIcon.className = 'fas fa-network-wired';
+        healthIcon.style.color = '#ffffff';
+        healthStatus.textContent = 'No active connections';
+      } else {
+        healthIcon.className = 'fas fa-check-circle';
+        healthIcon.style.color = '#4CAF50';
+        healthStatus.textContent = `All ${states.total} connections active`;
+      }
+    }
+    
+    // Add CSS styles for connection health indicators
+    function addConnectionHealthStyles() {
+      const style = document.createElement('style');
+      style.textContent = `
+        .health-icon {
+          margin-right: 8px;
+        }
+        
+        .global-connection-health {
+          cursor: pointer;
+          transition: background-color 0.3s;
+        }
+        
+        .global-connection-health:hover {
+          background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        .reconnecting-spinner {
+          display: inline-block;
+          width: 10px;
+          height: 10px;
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          border-top-color: white;
+          animation: spin 1s linear infinite;
+          margin-left: 5px;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `;
+      
+      document.head.appendChild(style);
+      
+      // Add click handler to toggle detailed stats
+      const indicator = document.getElementById('global-connection-health');
+      if (indicator) {
+        indicator.addEventListener('click', toggleDetailedConnectionStats);
+      }
+    }
+    
+    // Toggle detailed connection stats panel
+    function toggleDetailedConnectionStats() {
+      // Remove existing panel if it exists
+      const existingPanel = document.getElementById('detailed-connection-stats');
+      if (existingPanel) {
+        existingPanel.remove();
+        return;
+      }
+      
+      // Create panel
+      const panel = document.createElement('div');
+      panel.id = 'detailed-connection-stats';
+      panel.className = 'detailed-connection-stats';
+      panel.style.cssText = `
+        position: fixed;
+        top: 50px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        border-radius: 5px;
+        padding: 10px;
+        font-size: 12px;
+        z-index: 901;
+        max-height: 60vh;
+        overflow-y: auto;
+        width: 280px;
+      `;
+      
+      // Add header
+      panel.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.2); padding-bottom: 5px;">
+          <div>Connection Statistics</div>
+          <div style="cursor: pointer;" id="close-stats-panel">✕</div>
+        </div>
+        <div id="stats-content"></div>
+      `;
+      
+      document.body.appendChild(panel);
+      
+      // Add close handler
+      document.getElementById('close-stats-panel').addEventListener('click', () => {
+        panel.remove();
+      });
+      
+      // Initial update
+      updateDetailedConnectionStats();
+      
+      // Update every second while open
+      const updateInterval = setInterval(() => {
+        if (!document.getElementById('detailed-connection-stats')) {
+          clearInterval(updateInterval);
+          return;
+        }
+        updateDetailedConnectionStats();
+      }, 1000);
+    }
+    
+    // Update detailed connection stats
+    function updateDetailedConnectionStats() {
+      const statsContent = document.getElementById('stats-content');
+      if (!statsContent) return;
+      
+      // Build stats HTML
+      let html = '';
+      
+      // Add global stats
+      const totalConnections = Object.keys(peerConnections).length;
+      html += `<div style="margin-bottom: 10px;">Total connections: ${totalConnections}</div>`;
+      
+      // Get active bandwidth profile
+      html += `<div style="margin-bottom: 10px;">
+                 Bandwidth profile: ${connectionState.activeBandwidthProfile}
+                 (${CONNECTION_MANAGER_CONFIG.bandwidthLimits[connectionState.activeBandwidthProfile].videoBitrate / 1000} kbps)
+               </div>`;
+      
+      // Add individual connection stats
+      Object.entries(peerConnections).forEach(([participantId, connection]) => {
+        // Get participant name
+        let participantName = participantId;
+        const videoWrapper = document.querySelector(`.video-wrapper[data-user-id="${participantId}"]`);
+        if (videoWrapper) {
+          const nameTag = videoWrapper.querySelector('.video-name-tag');
+          if (nameTag) {
+            participantName = nameTag.textContent;
+          }
+        }
+        
+        // Get connection stats
+        const stats = connectionState.connectionStats[participantId] || {};
+        const state = connectionState.peerConnectionStates[participantId] || {};
+        
+        // Color based on connection state
+        let stateColor = '#ffffff';
+        if (connection.iceConnectionState === 'connected' || connection.iceConnectionState === 'completed') {
+          stateColor = '#4CAF50';
+        } else if (connection.iceConnectionState === 'failed') {
+          stateColor = '#F44336';
+        } else if (connection.iceConnectionState === 'disconnected') {
+          stateColor = '#FF9800';
+        } else if (connection.iceConnectionState === 'checking' || connection.iceConnectionState === 'new') {
+          stateColor = '#2196F3';
+        }
+        
+        // Build connection stats
+        html += `
+          <div style="margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+            <div style="display: flex; justify-content: space-between;">
+              <div style="font-weight: bold;">${participantName}</div>
+              <div style="color: ${stateColor};">${connection.iceConnectionState}</div>
+            </div>
+            <div style="margin-top: 5px; display: flex; justify-content: space-between;">
+              <div>↓ ${Math.round((stats.bitrateReceived || 0) / 1000)} kbps</div>
+              <div>↑ ${Math.round((stats.bitrateSent || 0) / 1000)} kbps</div>
+            </div>
+            <div style="margin-top: 5px; display: flex; justify-content: space-between;">
+              <div>Loss: ${(stats.packetLossRate || 0).toFixed(1)}%</div>
+              <div>RTT: ${((stats.roundTripTime || 0) * 1000).toFixed(0)} ms</div>
+            </div>
+          </div>
+        `;
+      });
+      
+      // Update content
+      statsContent.innerHTML = html;
+    }
+    
+    // Initialize the manager
+    initializeManager();
+    
+    // Return public API
+    return {
+      getConnectionStats: function() {
+        return connectionState.connectionStats;
+      },
+      forceBandwidthProfile: function(profile) {
+        if (CONNECTION_MANAGER_CONFIG.bandwidthLimits[profile]) {
+          connectionState.activeBandwidthProfile = profile;
+          // Apply to all connections
+          Object.entries(peerConnections).forEach(([participantId, connection]) => {
+            applyBandwidthLimits(connection, participantId);
+          });
+          return true;
+        }
+        return false;
+      },
+      forceReconnect: function(participantId) {
+        if (peerConnections[participantId]) {
+          recreateConnection(participantId);
+          return true;
+        }
+        return false;
+      }
+    };
+  })();
+  

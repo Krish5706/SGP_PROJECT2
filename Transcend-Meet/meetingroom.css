@@ -832,10 +832,10 @@ body {
 /* Whiteboard container styling */
 .whiteboard-container {
   position: absolute;
-  top: 80px;
-  left: 50%;
+  top: 15px;
+  left: 70%;
   transform: translateX(-50%);
-  width: 80%;
+  width: 50%;
   height: 70%;
   background-color: white;
   border-radius: 8px;

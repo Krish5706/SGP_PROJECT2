@@ -9,6 +9,61 @@ let config = {
     channel: 'main',
 }
 
+
+
+let screenTrack = null;
+let screenSharing = false;
+
+document.getElementById('screen-share-btn').addEventListener('click', async () => {
+    if (!screenSharing) {
+        try {
+            // Create screen track
+            screenTrack = await AgoraRTC.createScreenVideoTrack();
+
+            // Stop the current video track and unpublish
+            await client.unpublish(localTracks.videoTrack);
+            localTracks.videoTrack.stop();
+            localTracks.videoTrack.close();
+
+            // Replace local video track with screen share
+            localTracks.videoTrack = screenTrack;
+            await client.publish([screenTrack]);
+
+            // Update UI state
+            screenSharing = true;
+            document.getElementById('screen-share-btn').style.backgroundColor = 'rgb(80, 160, 255, 0.7)';
+
+            // Listen for screen share ending (like user presses "Stop sharing")
+            screenTrack.on('track-ended', async () => {
+                await stopScreenSharing();
+            });
+        } catch (err) {
+            console.error("Failed to start screen sharing:", err);
+        }
+    } else {
+        await stopScreenSharing();
+    }
+});
+
+const stopScreenSharing = async () => {
+    if (screenTrack) {
+        await client.unpublish(screenTrack);
+        screenTrack.stop();
+        screenTrack.close();
+        screenTrack = null;
+    }
+
+    // Recreate and publish the camera video track
+    localTracks.videoTrack = await AgoraRTC.createCameraVideoTrack();
+    await client.publish([localTracks.videoTrack]);
+
+    // Replace stream in DOM
+    localTracks.videoTrack.play(`stream-${config.uid}`);
+
+    screenSharing = false;
+    document.getElementById('screen-share-btn').style.backgroundColor = '#1f1f1f8e';
+};
+
 //#3 - Setting tracks for when user joins
 let localTracks = {
     audioTrack:null,

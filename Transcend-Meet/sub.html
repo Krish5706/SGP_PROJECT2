@@ -1,0 +1,232 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Conference Subtitles</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    video {
+      width: 80%;
+      margin-top: 20px;
+      border-radius: 12px;
+    }
+
+    #subtitle {
+      position: fixed;
+      bottom: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 12px 20px;
+      border-radius: 20px;
+      font-size: 1.5rem;
+      max-width: 80%;
+      text-align: center;
+      color: #00ffcc;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Live Subtitles Demo</h1>
+  <video autoplay muted playsinline></video>
+  <div id="subtitle">Subtitles will appear here...</div>
+
+  <script>
+    // Get video and subtitle elements
+    const video = document.querySelector('video');
+    const subtitle = document.getElementById('subtitle');
+
+    // Start webcam
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        console.error('Camera access denied:', err);
+      });
+
+    // Live Speech Recognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        subtitle.textContent = transcript;
+      };
+
+      recognition.onerror = (e) => {
+        console.error('Speech recognition error:', e.error);
+      };
+
+      recognition.start();
+    } else {
+      subtitle.textContent = "Speech recognition not supported in this browser.";
+    }
+  </script>
+
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Video Conference Subtitles</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 20px;
+    }
+
+    video {
+      width: 80%;
+      margin-top: 20px;
+      border-radius: 12px;
+    }
+
+    #subtitle {
+      position: fixed;
+      bottom: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 12px 20px;
+      border-radius: 20px;
+      font-size: 1.5rem;
+      max-width: 80%;
+      text-align: center;
+      color: #00ffcc;
+    }
+
+    #controls {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Live Subtitles Demo</h1>
+  <div id="controls">
+    <select id="language">
+      <option value="gu-IN">Gujarati</option>
+      <option value="hi-IN">Hindi</option>
+      <option value="mr-IN">Marathi</option>
+      <option value="ta-IN">Tamil</option>
+      <option value="de-DE">German</option>
+      <option value="en-US" selected>English</option>
+    </select>
+    <button id="toggleSubtitles">Start Subtitles</button>
+  </div>
+
+  <video autoplay muted playsinline></video>
+  <div id="subtitle">Subtitles will appear here...</div>
+
+  <script>
+    const video = document.querySelector('video');
+    const subtitle = document.getElementById('subtitle');
+    const languageSelect = document.getElementById('language');
+    const toggleBtn = document.getElementById('toggleSubtitles');
+
+    let recognition;
+    let isListening = false;
+
+    // Start webcam
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        console.error('Camera access denied:', err);
+        subtitle.textContent = "Camera access denied.";
+      });
+
+    function startRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        subtitle.textContent = "Speech recognition not supported in this browser.";
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = languageSelect.value;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          transcript += event.results[i][0].transcript;
+        }
+        subtitle.textContent = transcript;
+      };
+
+      recognition.onerror = (e) => {
+        console.error('Speech recognition error:', e.error);
+        subtitle.textContent = "Error: " + e.error;
+      };
+
+      recognition.onend = () => {
+        if (isListening) recognition.start(); // Restart if still active
+      };
+
+      recognition.start();
+    }
+
+    function stopRecognition() {
+      if (recognition) recognition.stop();
+    }
+
+    toggleBtn.addEventListener('click', () => {
+      if (!isListening) {
+        startRecognition();
+        toggleBtn.textContent = "Stop Subtitles";
+        isListening = true;
+      } else {
+        stopRecognition();
+        toggleBtn.textContent = "Start Subtitles";
+        subtitle.textContent = "Subtitles will appear here...";
+        isListening = false;
+      }
+    });
+
+    languageSelect.addEventListener('change', () => {
+      if (isListening) {
+        stopRecognition();
+        startRecognition();
+      }
+    });
+  </script>
+
+</body>
+</html>

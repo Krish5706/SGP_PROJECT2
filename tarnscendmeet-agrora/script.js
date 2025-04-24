@@ -214,3 +214,5 @@ const stopScreenShare = async () => {
     isScreenSharing = false;
     document.getElementById('screen-share-btn').style.backgroundColor = '#1f1f1f8e';
 }
+
+// subtitle button

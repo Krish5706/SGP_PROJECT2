@@ -266,12 +266,8 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const emoji = this.dataset.emoji;
             
-            // Create multiple emoji elements for a burst effect
-            for (let i = 0; i < 5; i++) {
-                setTimeout(() => {
-                    createFloatingEmoji(emoji, emojiContainer);
-                }, i * 150); // Stagger the creation
-            }
+            // Broadcast the reaction to other users
+            broadcastReaction(emoji);
             
             // Hide the reaction panel after selection
             document.getElementById('reaction-buttons').style.display = 'none';
@@ -288,6 +284,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Function to broadcast the reaction to other users
+function broadcastReaction(emoji) {
+    // Here you would implement the logic to send the emoji to other users
+    // For example, using WebSocket or Agora's signaling
+    console.log(`Broadcasting reaction: ${emoji}`);
+    
+    // Simulate receiving the reaction
+    receiveReaction(emoji);
+}
+
+// Function to receive and display the reaction
+function receiveReaction(emoji) {
+    // Create multiple emoji elements for a burst effect
+    for (let i = 0; i < 5; i++) {
+        setTimeout(() => {
+            createFloatingEmoji(emoji, document.querySelector('.emoji-container'));
+        }, i * 150); // Stagger the creation
+    }
+}
 
 // Function to create and animate a floating emoji
 function createFloatingEmoji(emoji, container) {
@@ -308,3 +324,294 @@ function createFloatingEmoji(emoji, container) {
         emojiElement.remove();
     }, 2000); // Remove after 2 seconds (matches animation duration)
 }
+
+// Recording functionality
+
+// Load the required libraries for MP4 conversion
+document.addEventListener('DOMContentLoaded', function() {
+    // Reference to the recording button
+    const recordingBtn = document.querySelector('.icon-wrapper:nth-child(5) .control-icon');
+    
+    // Variables for recording state
+    let isRecording = false;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordingStream = null;
+    
+    // Create recording indicator
+    const recordingIndicator = document.createElement('div');
+    recordingIndicator.className = 'recording-active';
+    recordingIndicator.innerHTML = '<div class="recording-dot"></div><span>Recording...</span>';
+    document.body.appendChild(recordingIndicator);
+    
+    // Create download notification
+    const downloadNotification = document.createElement('div');
+    downloadNotification.className = 'download-notification';
+    downloadNotification.innerHTML = `
+        <p>Recording complete!</p>
+        <button class="download-btn">Save as MP4</button>
+        <div class="processing-indicator" style="display:none;">Processing recording...</div>
+    `;
+    document.body.appendChild(downloadNotification);
+    
+    // Get the download button
+    const downloadBtn = downloadNotification.querySelector('.download-btn');
+    const processingIndicator = downloadNotification.querySelector('.processing-indicator');
+    
+    // Function to get supported MIME type for recording
+    const getSupportedMimeType = () => {
+        // Try MP4 format first
+        if (MediaRecorder.isTypeSupported('video/mp4')) {
+            return 'video/mp4';
+        }
+        // Then try other formats that can be converted to MP4
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=h264')) {
+            return 'video/webm;codecs=h264';
+        }
+        if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+            return 'video/webm;codecs=vp9';
+        }
+        if (MediaRecorder.isTypeSupported('video/webm')) {
+            return 'video/webm';
+        }
+        // Default fallback
+        return '';
+    };
+    
+    // Function to capture screen and audio
+    const startCapture = async () => {
+        try {
+            // Create a canvas element for composition
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Get the video element dimensions from the local user's video
+            const videoElement = document.getElementById(`stream-${config.uid}`);
+            
+            if (!videoElement) {
+                throw new Error("Your video stream is not available");
+            }
+            
+            // Set canvas dimensions to match video
+            canvas.width = videoElement.clientWidth || 640;
+            canvas.height = videoElement.clientHeight || 480;
+            
+            // Get audio track from microphone
+            const audioTrack = localTracks.audioTrack ? 
+                               localTracks.audioTrack.getMediaStreamTrack() : 
+                               null;
+            
+            // Create a canvas stream
+            const canvasStream = canvas.captureStream(30); // 30 FPS
+            
+            // Add audio track to canvas stream if available
+            if (audioTrack) {
+                canvasStream.addTrack(audioTrack);
+            }
+            
+            // Recording function to draw video frame to canvas
+            function drawVideoToCanvas() {
+                if (isRecording && videoElement) {
+                    // Draw current frame to canvas
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    
+                    // If video element exists and is playing, draw it
+                    if (videoElement.videoWidth > 0 && videoElement.videoHeight > 0) {
+                        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                    }
+                    
+                    // Continue loop
+                    requestAnimationFrame(drawVideoToCanvas);
+                }
+            }
+            
+            // Start the drawing loop
+            drawVideoToCanvas();
+            
+            return canvasStream;
+        } catch (error) {
+            console.error("Error starting capture:", error);
+            alert(`Failed to start recording: ${error.message}`);
+            return null;
+        }
+    };
+    
+    // Start recording function
+    const startRecording = async () => {
+        try {
+            // Get the stream to record
+            recordingStream = await startCapture();
+            
+            if (!recordingStream) {
+                throw new Error("Failed to create recording stream");
+            }
+            
+            // Get supported MIME type
+            const mimeType = getSupportedMimeType();
+            
+            // Create MediaRecorder with appropriate options
+            const options = mimeType ? { mimeType } : {};
+            mediaRecorder = new MediaRecorder(recordingStream, options);
+            
+            // Clear previous chunks
+            recordedChunks = [];
+            
+            // Handle data available event
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data && event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            // Start recording
+            mediaRecorder.start(1000); // Collect data every second
+            isRecording = true;
+            
+            // Update UI
+            recordingBtn.classList.add('control-icon-active');
+            recordingIndicator.style.display = 'flex';
+            
+            // Update button text and icon
+            recordingBtn.src = './assets/stop-recording.svg';
+            recordingBtn.parentElement.querySelector('p').textContent = 'Stop';
+            
+            console.log("Recording started successfully");
+            
+        } catch (error) {
+            console.error("Error starting recording:", error);
+            alert(`Could not start recording: ${error.message}`);
+            isRecording = false;
+        }
+    };
+    
+    // Stop recording function
+    const stopRecording = async () => {
+        try {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                // Stop the media recorder
+                mediaRecorder.stop();
+                
+                // Wait for the last data
+                await new Promise(resolve => {
+                    mediaRecorder.onstop = resolve;
+                    // If it doesn't stop within 1 second, resolve anyway
+                    setTimeout(resolve, 1000);
+                });
+            }
+            
+            // Stop all tracks in the recording stream
+            if (recordingStream) {
+                recordingStream.getTracks().forEach(track => track.stop());
+                recordingStream = null;
+            }
+            
+            // Update state and UI
+            isRecording = false;
+            recordingBtn.classList.remove('control-icon-active');
+            recordingIndicator.style.display = 'none';
+            
+            // Change button back
+            recordingBtn.src = './assets/recording.svg';
+            recordingBtn.parentElement.querySelector('p').textContent = 'Record';
+            
+            // Show download notification if we have data
+            if (recordedChunks.length > 0) {
+                downloadNotification.style.display = 'block';
+                
+                // Auto-hide after 30 seconds if not interacted with
+                setTimeout(() => {
+                    if (downloadNotification.style.display === 'block') {
+                        downloadNotification.style.display = 'none';
+                    }
+                }, 30000);
+            }
+            
+            console.log("Recording stopped successfully");
+            
+        } catch (error) {
+            console.error("Error stopping recording:", error);
+            alert(`Error stopping recording: ${error.message}`);
+        }
+    };
+    
+    // Toggle recording state
+    const toggleRecording = async () => {
+        if (!isRecording) {
+            await startRecording();
+        } else {
+            await stopRecording();
+        }
+    };
+    
+    // Add click event to recording button
+    recordingBtn.addEventListener('click', toggleRecording);
+    
+    // Download recording in MP4 format
+    downloadBtn.addEventListener('click', async () => {
+        if (recordedChunks.length === 0) {
+            alert("No recording data available");
+            return;
+        }
+        
+        // Show processing message
+        downloadBtn.disabled = true;
+        processingIndicator.style.display = 'block';
+        
+        try {
+            // Get recorded data MIME type
+            const mimeType = getSupportedMimeType() || 'video/webm';
+            
+            // Create a blob from the recorded chunks
+            const recordedBlob = new Blob(recordedChunks, { type: mimeType });
+            
+            // Create a URL for the blob
+            const url = URL.createObjectURL(recordedBlob);
+            
+            // Create a download link
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style.display = 'none';
+            a.href = url;
+            
+            // Set the download file name with correct extension
+            const fileExtension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+            a.download = `recording-${new Date().toISOString().replace(/[:.]/g, '-')}.${fileExtension}`;
+            
+            // Trigger download
+            a.click();
+            
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                downloadNotification.style.display = 'none';
+                downloadBtn.disabled = false;
+                processingIndicator.style.display = 'none';
+            }, 100);
+            
+        } catch (error) {
+            console.error("Error saving recording:", error);
+            alert(`Error saving recording: ${error.message}`);
+            downloadBtn.disabled = false;
+            processingIndicator.style.display = 'none';
+        }
+    });
+    
+    // Clean up when leaving the channel
+    document.getElementById('leave-btn').addEventListener('click', async () => {
+        if (isRecording) {
+            await stopRecording();
+        }
+        downloadNotification.style.display = 'none';
+    });
+    
+    // Close download notification if clicked outside
+    document.addEventListener('click', (event) => {
+        if (downloadNotification.style.display === 'block' && 
+            !downloadNotification.contains(event.target) &&
+            event.target !== recordingBtn) {
+            downloadNotification.style.display = 'none';
+        }
+    });
+});

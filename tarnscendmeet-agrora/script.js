@@ -952,227 +952,91 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// ======================================================================================================================================
+
 // subtitle button
-// Initialize variables for subtitle functionality
-let subtitleEnabled = false;
-let selectedLanguage = 'en-US'; // Default language
-let subtitleOverlay;
-let languageMenu;
-let recognition;
+function setupSubtitles() {
+  let subtitleEnabled = false;
+  let selectedLanguage = 'en-US';
+  let subtitleOverlay, languageMenu, recognition;
+  const languages = [
+      { code: 'en-US', name: 'English' },
+      { code: 'es-ES', name: 'Spanish' },
+      { code: 'fr-FR', name: 'French' },
+      { code: 'de-DE', name: 'German' },
+      { code: 'hi-IN', name: 'Hindi' },
+      { code: 'gu-IN', name: 'Gujarati' }
+  ];
 
-// Language options for subtitles
-const languages = [
-  { code: 'en-US', name: 'English' },
-  { code: 'es-ES', name: 'Spanish' },
-  { code: 'fr-FR', name: 'French' },
-  { code: 'de-DE', name: 'German' },
-  { code: 'hi-IN', name: 'Hindi' },
-  { code: 'gu-IN', name: 'Gujarati' }
-];
-
-// Wait for DOM content to be loaded
-document.addEventListener('DOMContentLoaded', () => {
-  // Add event listener to subtitles button
-  const subtitlesBtn = document.getElementById('subtitles-btn');
-  subtitlesBtn.addEventListener('click', toggleLanguageMenu);
-  
-  // Create subtitle overlay
-  createSubtitleOverlay();
-  
-  // Create language menu (initially hidden)
-  createLanguageMenu();
-});
-
-// Function to create subtitle overlay - horizontal rounded rectangle
-function createSubtitleOverlay() {
-  subtitleOverlay = document.createElement('div');
-  subtitleOverlay.id = 'subtitle-overlay';
-  subtitleOverlay.style.position = 'absolute';
-  subtitleOverlay.style.left = '50%';
-  subtitleOverlay.style.transform = 'translateX(-50%)';
-  subtitleOverlay.style.bottom = '120px';
-  subtitleOverlay.style.maxWidth = '80%';
-  subtitleOverlay.style.minWidth = '300px';
-  subtitleOverlay.style.textAlign = 'center';
-  subtitleOverlay.style.color = 'white';
-  subtitleOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
-  subtitleOverlay.style.padding = '10px 20px';
-  subtitleOverlay.style.fontFamily = 'Poppins, sans-serif';
-  subtitleOverlay.style.fontSize = '18px';
-  subtitleOverlay.style.zIndex = '100';
-  subtitleOverlay.style.display = 'none';
-  subtitleOverlay.style.borderRadius = '24px'; // Rounded edges
-  subtitleOverlay.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
-  document.body.appendChild(subtitleOverlay);
-}
-
-// Function to create vertical language menu
-function createLanguageMenu() {
-  languageMenu = document.createElement('div');
-  languageMenu.id = 'language-menu';
-  languageMenu.style.position = 'absolute';
-  languageMenu.style.bottom = '100px';
-  languageMenu.style.right = '80px'; // Position to the right side
-  languageMenu.style.display = 'none';
-  languageMenu.style.backgroundColor = '#333';
-  languageMenu.style.borderRadius = '8px';
-  languageMenu.style.padding = '10px';
-  languageMenu.style.zIndex = '101';
-  languageMenu.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.3)';
-  languageMenu.style.flexDirection = 'column'; // Vertical layout
-  languageMenu.style.gap = '5px'; // Space between buttons
-  
-  // Add language options
-  languages.forEach(lang => {
-    const langOption = document.createElement('button');
-    langOption.textContent = lang.name;
-    langOption.dataset.langCode = lang.code;
-    langOption.style.padding = '8px 15px';
-    langOption.style.backgroundColor = '#555';
-    langOption.style.color = 'white';
-    langOption.style.border = 'none';
-    langOption.style.borderRadius = '4px';
-    langOption.style.cursor = 'pointer';
-    langOption.style.width = '100%';
-    langOption.style.textAlign = 'left';
-    langOption.style.fontFamily = 'Poppins, sans-serif';
-    
-    // Highlight the default selected language
-    if (lang.code === selectedLanguage) {
-      langOption.style.backgroundColor = '#007bff';
-    }
-    
-    langOption.addEventListener('click', () => {
-      selectLanguage(lang.code);
-      // Update button styles
-      Array.from(languageMenu.children).forEach(button => {
-        button.style.backgroundColor = '#555';
+  document.addEventListener('DOMContentLoaded', () => {
+      const subtitlesBtn = document.getElementById('subtitles-btn');
+      subtitlesBtn.addEventListener('click', () => {
+          if (!languageMenu) {
+              languageMenu = document.createElement('div');
+              languageMenu.style.cssText = 'position:absolute;bottom:100px;right:80px;background:#333;border-radius:8px;padding:10px;z-index:101;display:flex;flex-direction:column;gap:5px;';
+              languages.forEach(lang => {
+                  const btn = document.createElement('button');
+                  btn.textContent = lang.name;
+                  btn.style.cssText = 'padding:8px 15px;background:#555;color:white;border:none;border-radius:4px;cursor:pointer;text-align:left;font-family:Poppins,sans-serif;';
+                  if (lang.code === selectedLanguage) btn.style.background = '#007bff';
+                  btn.onclick = () => {
+                      selectedLanguage = lang.code;
+                      if (subtitleEnabled) {
+                          recognition.stop();
+                          startRecognition();
+                      } else toggleSubtitles();
+                      Array.from(languageMenu.children).forEach(b => b.style.background = '#555');
+                      btn.style.background = '#007bff';
+                      languageMenu.style.display = 'none';
+                  };
+                  languageMenu.appendChild(btn);
+              });
+              document.body.appendChild(languageMenu);
+          }
+          languageMenu.style.display = (languageMenu.style.display === 'flex') ? 'none' : 'flex';
       });
-      langOption.style.backgroundColor = '#007bff';
-    });
-    
-    languageMenu.appendChild(langOption);
+
+      subtitleOverlay = document.createElement('div');
+      subtitleOverlay.id = 'subtitle-overlay';
+      subtitleOverlay.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:120px;max-width:80%;min-width:300px;text-align:center;color:white;background:rgba(0,0,0,0.6);padding:10px 20px;font-family:Poppins,sans-serif;font-size:18px;z-index:100;display:none;border-radius:24px;box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+      document.body.appendChild(subtitleOverlay);
   });
-  
-  document.body.appendChild(languageMenu);
-}
 
-// Function to toggle language menu
-function toggleLanguageMenu() {
-  if (languageMenu.style.display === 'none' || languageMenu.style.display === '') {
-    languageMenu.style.display = 'flex'; // Show the menu with flex display for vertical layout
-  } else {
-    languageMenu.style.display = 'none';
-  }
-}
-
-// Function to select language
-function selectLanguage(langCode) {
-  selectedLanguage = langCode;
-  
-  // If speech recognition is already running, restart it with the new language
-  if (subtitleEnabled) {
-    stopSpeechRecognition();
-    startSpeechRecognition();
-  } else {
-    // Enable subtitles if they weren't already enabled
-    toggleSubtitles();
-  }
-  
-  // Hide language menu after selection
-  languageMenu.style.display = 'none';
-}
-
-// Function to toggle subtitles
-function toggleSubtitles() {
-  subtitleEnabled = !subtitleEnabled;
-  
-  if (subtitleEnabled) {
-    // Show subtitle overlay
-    subtitleOverlay.style.display = 'block';
-    startSpeechRecognition();
-    // Change icon color to indicate active state
-    document.getElementById('subtitles-btn').style.filter = 'invert(50%) sepia(100%) saturate(2000%) hue-rotate(190deg)';
-  } else {
-    // Hide subtitle overlay
-    subtitleOverlay.style.display = 'none';
-    stopSpeechRecognition();
-    // Reset icon color
-    document.getElementById('subtitles-btn').style.filter = '';
-  }
-}
-
-// Function to start speech recognition for all users in the conference
-function startSpeechRecognition() {
-  if (!('webkitSpeechRecognition' in window)) {
-    subtitleOverlay.textContent = 'Speech recognition not supported in this browser.';
-    return;
-  }
-  
-  recognition = new webkitSpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = selectedLanguage;
-  
-  recognition.onresult = (event) => {
-    let finalTranscript = '';
-    let interimTranscript = '';
-    
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const transcript = event.results[i][0].transcript;
-      
-      if (event.results[i].isFinal) {
-        finalTranscript += transcript;
+  function toggleSubtitles() {
+      subtitleEnabled = !subtitleEnabled;
+      subtitleOverlay.style.display = subtitleEnabled ? 'block' : 'none';
+      if (subtitleEnabled) {
+          startRecognition();
+          document.getElementById('subtitles-btn').style.filter = 'invert(50%) sepia(100%) saturate(2000%) hue-rotate(190deg)';
       } else {
-        interimTranscript += transcript;
+          recognition?.stop();
+          document.getElementById('subtitles-btn').style.filter = '';
       }
-    }
-    
-    // Update the subtitle overlay with the latest transcription
-    subtitleOverlay.textContent = finalTranscript || interimTranscript;
-  };
-  
-  recognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-    subtitleOverlay.textContent = `Error: ${event.error}`;
-  };
-  
-  // Auto-restart if recognition ends
-  recognition.onend = () => {
-    if (subtitleEnabled) {
-      recognition.start();
-    }
-  };
-  
-  recognition.start();
-}
+  }
 
-// Function to stop speech recognition
-function stopSpeechRecognition() {
-  if (recognition) {
-    recognition.stop();
+  function startRecognition() {
+      if (!('webkitSpeechRecognition' in window)) {
+          subtitleOverlay.textContent = 'Speech recognition not supported.';
+          return;
+      }
+      recognition = new webkitSpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = selectedLanguage;
+      recognition.onresult = e => {
+          let finalTranscript = '', interimTranscript = '';
+          for (let i = e.resultIndex; i < e.results.length; i++) {
+              const transcript = e.results[i][0].transcript;
+              if (e.results[i].isFinal) finalTranscript += transcript;
+              else interimTranscript += transcript;
+          }
+          subtitleOverlay.textContent = finalTranscript || interimTranscript;
+      };
+      recognition.onerror = e => subtitleOverlay.textContent = `Error: ${e.error}`;
+      recognition.onend = () => subtitleEnabled && recognition.start();
+      recognition.start();
   }
 }
 
-// Add functionality to detect when users are speaking
-// This would integrate with your existing Agora video conference setup
-// For each active user in the conference
-function setupUserAudioTranscription(user) {
-  // In a real implementation, this would hook into Agora's audio stream processing
-  // Here's a placeholder for the concept
-  console.log(`Setting up transcription for user: ${user.uid}`);
-  
-  // Example integration point with Agora:
-  // When a remote user's audio stream is received, process it for transcription
-  // This would require additional Agora SDK integration specific to your setup
-}
-
-// Example function to handle transcriptions for all users
-function handleAllUserTranscriptions(transcriptions) {
-  // Process transcriptions from all users and update subtitle overlay
-  // This is a conceptual function - actual implementation would depend on how
-  // you're getting audio data from all participants
-  
-  let allText = transcriptions.map(t => `${t.userName}: ${t.text}`).join('\n');
-  subtitleOverlay.textContent = allText;
-}
+// Call the function
+setupSubtitles();

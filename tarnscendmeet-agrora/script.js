@@ -214,10 +214,6 @@ const stopScreenShare = async () => {
     isScreenSharing = false;
     document.getElementById('screen-share-btn').style.backgroundColor = '#1f1f1f8e';
 }
-
-// subtitle button
-
-
 // reaction button
 // Dynamically create reaction elements while preserving HTML structure
 document.addEventListener('DOMContentLoaded', function() {
@@ -291,8 +287,16 @@ function broadcastReaction(emoji) {
     // For example, using WebSocket or Agora's signaling
     console.log(`Broadcasting reaction: ${emoji}`);
     
-    // Simulate receiving the reaction
-    receiveReaction(emoji);
+    // Simulate sending the reaction to other users
+    sendReactionToServer(emoji);
+}
+
+// Mock function to simulate sending the reaction to a server
+function sendReactionToServer(emoji) {
+    // Simulate receiving the reaction on other clients
+    setTimeout(() => {
+        receiveReaction(emoji);
+    }, 1000); // Simulate network delay
 }
 
 // Function to receive and display the reaction

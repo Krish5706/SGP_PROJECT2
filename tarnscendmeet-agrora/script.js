@@ -333,7 +333,6 @@ function createFloatingEmoji(emoji, container) {
 // ===========================================================================================================
 
 // Recording functionality
-
 // Add these variables at the top of your script.js file
 let mediaRecorder;
 let recordedChunks = [];
@@ -365,28 +364,82 @@ recordBtn.addEventListener('click', startRecording);
 stopRecordBtn.addEventListener('click', stopRecording);
 
 /**
- * Start recording screen and audio
+ * Create an audio context to mix all audio streams
+ */
+let audioContext;
+let audioDestination;
+let audioSources = {};
+
+/**
+ * Initialize audio mixing for recording
+ */
+function initAudioMixing() {
+  // Create audio context
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  audioDestination = audioContext.createMediaStreamDestination();
+  
+  // Add local audio track to the mix
+  if (localTracks.audioTrack) {
+    const audioStream = new MediaStream([localTracks.audioTrack.getMediaStreamTrack()]);
+    const source = audioContext.createMediaStreamSource(audioStream);
+    source.connect(audioDestination);
+    audioSources[config.uid] = source;
+  }
+  
+  // Add all remote audio tracks to the mix
+  for (const uid in remoteTracks) {
+    const user = remoteTracks[uid];
+    if (user.audioTrack) {
+      const audioStream = new MediaStream([user.audioTrack._mediaStreamTrack]);
+      const source = audioContext.createMediaStreamSource(audioStream);
+      source.connect(audioDestination);
+      audioSources[uid] = source;
+    }
+  }
+  
+  // Add event listener for new users joining
+  client.on("user-published", (user, mediaType) => {
+    if (isRecording && mediaType === 'audio') {
+      setTimeout(() => {
+        if (user.audioTrack && !audioSources[user.uid]) {
+          const audioStream = new MediaStream([user.audioTrack._mediaStreamTrack]);
+          const source = audioContext.createMediaStreamSource(audioStream);
+          source.connect(audioDestination);
+          audioSources[user.uid] = source;
+        }
+      }, 1000); // Give time for the track to be fully available
+    }
+  });
+}
+
+/**
+ * Start recording screen and all participants' audio
  */
 async function startRecording() {
   try {
+    // Create a canvas for compositing
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size to match screen dimensions
+    canvas.width = window.screen.width;
+    canvas.height = window.screen.height;
+    
     // Get the screen capture stream
     const screenStream = await navigator.mediaDevices.getDisplayMedia({
       video: {
         cursor: "always",
         displaySurface: "browser"
-      },
-      audio: true
+      }
     });
     
-    // Get audio stream
-    const audioStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: false
-    });
+    // Initialize audio mixing
+    initAudioMixing();
     
-    // Combine the streams (if both are available)
-    const tracks = [...screenStream.getTracks(), ...audioStream.getAudioTracks()];
-    recordingStream = new MediaStream(tracks);
+    // Create a combined stream with screen video and mixed audio
+    const videoTrack = screenStream.getVideoTracks()[0];
+    const mixedAudioStream = audioDestination.stream;
+    recordingStream = new MediaStream([videoTrack, ...mixedAudioStream.getTracks()]);
     
     // Check for supported formats
     const mimeType = checkBrowserSupport();
@@ -396,7 +449,8 @@ async function startRecording() {
     
     // Initialize media recorder with combined stream
     mediaRecorder = new MediaRecorder(recordingStream, {
-      mimeType: mimeType
+      mimeType: mimeType,
+      videoBitsPerSecond: 3000000 // 3 Mbps for better quality
     });
     
     // Clear previous recordings
@@ -422,16 +476,70 @@ async function startRecording() {
     stopRecordBtn.style.display = 'block';
     stopRecordText.style.display = 'block';
     
+    // Add recording indicator
+    addRecordingIndicator();
+    
     // Listen for the end of screen sharing (browser's native stop button)
     screenStream.getVideoTracks()[0].onended = () => {
       stopRecording();
     };
     
-    console.log("Recording started");
+    console.log("Recording started with all participants' audio");
+    
+    // Start the recording timer
+    startRecordingTimer();
   } catch (error) {
     console.error("Error starting recording:", error);
     alert("Could not start recording: " + error.message);
   }
+}
+
+/**
+ * Add a visual recording indicator
+ */
+function addRecordingIndicator() {
+  const indicator = document.createElement('div');
+  indicator.id = 'recording-indicator';
+  indicator.innerHTML = `
+    <div class="recording-dot"></div>
+    <span>Recording</span>
+  `;
+  
+  // Style the indicator
+  indicator.style.position = 'fixed';
+  indicator.style.top = '10px';
+  indicator.style.left = '10px';
+  indicator.style.backgroundColor = 'rgba(255, 59, 59, 0.8)';
+  indicator.style.color = 'white';
+  indicator.style.padding = '4px 10px';
+  indicator.style.borderRadius = '4px';
+  indicator.style.display = 'flex';
+  indicator.style.alignItems = 'center';
+  indicator.style.zIndex = '9999';
+  indicator.style.fontFamily = 'Poppins, sans-serif';
+  indicator.style.fontSize = '14px';
+  
+  // Style the recording dot
+  const dot = indicator.querySelector('.recording-dot');
+  dot.style.width = '12px';
+  dot.style.height = '12px';
+  dot.style.backgroundColor = 'red';
+  dot.style.borderRadius = '50%';
+  dot.style.marginRight = '8px';
+  dot.style.animation = 'pulse 1.5s infinite';
+  
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  document.body.appendChild(indicator);
 }
 
 /**
@@ -451,22 +559,49 @@ function stopRecording() {
     recordingStream = null;
   }
   
+  // Clean up audio context resources
+  if (audioContext) {
+    for (const uid in audioSources) {
+      audioSources[uid].disconnect();
+    }
+    audioSources = {};
+    
+    // Close audio context if supported
+    if (audioContext.state !== 'closed' && audioContext.close) {
+      audioContext.close();
+    }
+  }
+  
   // Reset UI
   stopRecordBtn.style.display = 'none';
   stopRecordText.style.display = 'none';
   recordBtn.style.display = 'block';
   recordBtn.nextElementSibling.style.display = 'block'; // Show "record" text
   
+  // Remove recording indicator
+  const indicator = document.getElementById('recording-indicator');
+  if (indicator) {
+    document.body.removeChild(indicator);
+  }
+  
+  // Stop the recording timer
+  stopRecordingTimer();
+  
   console.log("Recording stopped");
 }
 
 /**
- * Save the recording as an MP4 file
+ * Save the recording as a video file
  */
 function saveRecording() {
+  if (recordedChunks.length === 0) {
+    console.warn("No recording data available");
+    return;
+  }
+  
   // Create a Blob from the recorded chunks
   const blob = new Blob(recordedChunks, {
-    type: 'video/webm'
+    type: mediaRecorder.mimeType || 'video/webm'
   });
   
   // Create URL for the recording
@@ -479,7 +614,7 @@ function saveRecording() {
   
   // Generate filename with timestamp
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  a.download = `transcend-meet-recording-${timestamp}.webm`;
+  a.download = `meeting-recording-${timestamp}.webm`;
   
   // Add to DOM, trigger click and remove
   document.body.appendChild(a);
@@ -492,23 +627,84 @@ function saveRecording() {
   console.log("Recording saved");
   
   // Show a notification to the user
+  showSaveNotification();
+}
+
+/**
+ * Show a notification that the recording was saved
+ */
+function showSaveNotification() {
   const notification = document.createElement('div');
-  notification.textContent = 'Recording saved successfully!';
+  notification.className = 'recording-notification';
+  notification.innerHTML = `
+    <div class="notification-content">
+      <img src="./assets/check-circle.svg" alt="Success" width="24" height="24">
+      <div class="notification-text">
+        <h3>Recording Saved</h3>
+        <p>Your meeting recording has been downloaded.</p>
+      </div>
+    </div>
+    <button class="close-notification">×</button>
+  `;
+  
+  // Style the notification
   notification.style.position = 'fixed';
   notification.style.bottom = '20px';
-  notification.style.left = '50%';
-  notification.style.transform = 'translateX(-50%)';
-  notification.style.padding = '10px 20px';
-  notification.style.backgroundColor = '#4CAF50';
-  notification.style.color = 'white';
-  notification.style.borderRadius = '5px';
+  notification.style.right = '20px';
+  notification.style.backgroundColor = 'white';
+  notification.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+  notification.style.borderRadius = '8px';
+  notification.style.padding = '15px';
   notification.style.zIndex = '9999';
+  notification.style.minWidth = '300px';
+  notification.style.maxWidth = '400px';
+  notification.style.fontFamily = 'Poppins, sans-serif';
+  
+  // Style notification content
+  const content = notification.querySelector('.notification-content');
+  content.style.display = 'flex';
+  content.style.alignItems = 'center';
+  
+  // Style text
+  const textDiv = notification.querySelector('.notification-text');
+  textDiv.style.marginLeft = '12px';
+  
+  // Style heading
+  const heading = notification.querySelector('h3');
+  heading.style.margin = '0 0 5px 0';
+  heading.style.fontSize = '16px';
+  heading.style.color = '#333';
+  
+  // Style paragraph
+  const paragraph = notification.querySelector('p');
+  paragraph.style.margin = '0';
+  paragraph.style.fontSize = '14px';
+  paragraph.style.color = '#666';
+  
+  // Style close button
+  const closeBtn = notification.querySelector('.close-notification');
+  closeBtn.style.position = 'absolute';
+  closeBtn.style.top = '10px';
+  closeBtn.style.right = '10px';
+  closeBtn.style.background = 'none';
+  closeBtn.style.border = 'none';
+  closeBtn.style.fontSize = '20px';
+  closeBtn.style.cursor = 'pointer';
+  closeBtn.style.color = '#999';
+  
+  // Add close functionality
+  closeBtn.addEventListener('click', () => {
+    document.body.removeChild(notification);
+  });
   
   document.body.appendChild(notification);
   
+  // Auto-hide after 5 seconds
   setTimeout(() => {
-    document.body.removeChild(notification);
-  }, 3000);
+    if (document.body.contains(notification)) {
+      document.body.removeChild(notification);
+    }
+  }, 5000);
 }
 
 // Function to handle browser compatibility for recording
@@ -540,7 +736,7 @@ function startRecordingTimer() {
     timerElement.style.position = 'fixed';
     timerElement.style.top = '10px';
     timerElement.style.right = '10px';
-    timerElement.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    timerElement.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
     timerElement.style.color = 'white';
     timerElement.style.padding = '5px 10px';
     timerElement.style.borderRadius = '4px';
@@ -577,20 +773,29 @@ function formatTime(seconds) {
   return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Modify the startRecording and stopRecording functions to include timer
-const originalStartRecording = startRecording;
-startRecording = async function() {
-  await originalStartRecording();
-  if (isRecording) {
-    startRecordingTimer();
+// Add event handlers for new users joining during recording
+client.on("user-published", (user, mediaType) => {
+  if (isRecording && mediaType === 'audio' && audioContext) {
+    setTimeout(() => {
+      if (user.audioTrack && !audioSources[user.uid]) {
+        const audioStream = new MediaStream([user.audioTrack._mediaStreamTrack]);
+        const source = audioContext.createMediaStreamSource(audioStream);
+        source.connect(audioDestination);
+        audioSources[user.uid] = source;
+        console.log(`Added user ${user.uid} audio to recording mix`);
+      }
+    }, 1000); // Short delay to ensure track is ready
   }
-};
+});
 
-const originalStopRecording = stopRecording;
-stopRecording = function() {
-  originalStopRecording();
-  stopRecordingTimer();
-};
+// Handle user leaving during recording
+client.on("user-left", (user) => {
+  if (isRecording && audioSources[user.uid]) {
+    audioSources[user.uid].disconnect();
+    delete audioSources[user.uid];
+    console.log(`Removed user ${user.uid} audio from recording mix`);
+  }
+});
 
 // ==========================================
 

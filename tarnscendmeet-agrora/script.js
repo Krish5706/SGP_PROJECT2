@@ -214,6 +214,7 @@ const stopScreenShare = async () => {
     isScreenSharing = false;
     document.getElementById('screen-share-btn').style.backgroundColor = '#1f1f1f8e';
 }
+
 // reaction button
 // Dynamically create reaction elements while preserving HTML structure
 document.addEventListener('DOMContentLoaded', function() {
@@ -616,6 +617,161 @@ document.addEventListener('DOMContentLoaded', function() {
             !downloadNotification.contains(event.target) &&
             event.target !== recordingBtn) {
             downloadNotification.style.display = 'none';
+        }
+    });
+});
+
+// ==========================================
+
+// participants button
+// Participants panel functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Create participants panel and add it to the body
+    const participantsPanel = document.createElement('div');
+    participantsPanel.className = 'participants-panel';
+    participantsPanel.id = 'participants-panel';
+    participantsPanel.innerHTML = `
+        <div class="participants-header">
+            <h2>Participants</h2>
+            <button class="close-participants">×</button>
+        </div>
+        <div class="participants-list" id="participants-list"></div>
+    `;
+    document.body.appendChild(participantsPanel);
+
+    // Get references
+    const participantBtn = document.getElementById('paricipant-btn');
+    const closeBtn = participantsPanel.querySelector('.close-participants');
+    const participantsList = document.getElementById('participants-list');
+
+    // Keep track of participants
+    let participants = {};
+
+    // Toggle participants panel
+    participantBtn.addEventListener('click', function() {
+        // Toggle panel visibility
+        participantsPanel.classList.toggle('show');
+        
+        // Toggle active state on button
+        if (participantsPanel.classList.contains('show')) {
+            participantBtn.classList.add('control-icon-active');
+            // Update participants list
+            updateParticipantsList();
+        } else {
+            participantBtn.classList.remove('control-icon-active');
+        }
+    });
+
+    // Close panel when close button is clicked
+    closeBtn.addEventListener('click', function() {
+        participantsPanel.classList.remove('show');
+        participantBtn.classList.remove('control-icon-active');
+    });
+
+    // Close panel when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!participantsPanel.contains(event.target) && 
+            event.target !== participantBtn && 
+            !participantBtn.contains(event.target) &&
+            participantsPanel.classList.contains('show')) {
+            participantsPanel.classList.remove('show');
+            participantBtn.classList.remove('control-icon-active');
+        }
+    });
+
+    // Function to update participants list
+    function updateParticipantsList() {
+        // Clear current list
+        participantsList.innerHTML = '';
+        
+        // Add local user first
+        if (config.uid) {
+            const localUserItem = createParticipantItem(config.uid, true);
+            participantsList.appendChild(localUserItem);
+        }
+        
+        // Add remote users
+        for (let uid in remoteTracks) {
+            const participantItem = createParticipantItem(uid, false);
+            participantsList.appendChild(participantItem);
+        }
+        
+        // Update participant count in header
+        const headerTitle = participantsPanel.querySelector('.participants-header h2');
+        const count = Object.keys(remoteTracks).length + (config.uid ? 1 : 0);
+        headerTitle.textContent = `Participants (${count})`;
+    }
+
+    // Create participant list item
+    function createParticipantItem(uid, isLocal) {
+        const item = document.createElement('div');
+        item.className = `participant-item ${isLocal ? 'local-user' : ''}`;
+        
+        // Create initial for avatar
+        const initial = uid.charAt(0).toUpperCase();
+        
+        // Create HTML structure
+        item.innerHTML = `
+            <div class="participant-info">
+                <div class="participant-avatar">${initial}</div>
+                <div class="participant-name">${uid} ${isLocal ? '(You)' : ''}</div>
+            </div>
+            <div class="participant-status">
+                <img class="status-icon" src="./assets/volume-${isLocal && !localTrackState.audioTrackMuted ? 'on' : 'off'}.svg" />
+                <img class="status-icon" src="./assets/videocam${isLocal && !localTrackState.videoTrackMuted ? '' : '-off'}.svg" />
+            </div>
+        `;
+        
+        return item;
+    }
+
+    // Add event listeners for user joined and left events
+    client.on("user-published", function(user, mediaType) {
+        // Update participants list if panel is visible
+        if (participantsPanel.classList.contains('show')) {
+            updateParticipantsList();
+        }
+    });
+
+    client.on("user-left", function(user) {
+        // Update participants list if panel is visible
+        if (participantsPanel.classList.contains('show')) {
+            updateParticipantsList();
+        }
+    });
+
+    // Update participant status when local tracks change state
+    document.getElementById('mic-btn').addEventListener('click', function() {
+        if (participantsPanel.classList.contains('show')) {
+            updateParticipantsList();
+        }
+    });
+
+    document.getElementById('camera-btn').addEventListener('click', function() {
+        if (participantsPanel.classList.contains('show')) {
+            updateParticipantsList();
+        }
+    });
+
+    // Update when volume indicator changes
+    client.on("volume-indicator", function(evt) {
+        if (!participantsPanel.classList.contains('show')) return;
+        
+        for (let i = 0; evt.length > i; i++) {
+            const speaker = evt[i].uid;
+            const volume = evt[i].level;
+            
+            // Find volume icon in participants panel
+            const statusIcons = participantsList.querySelectorAll(`.participant-item .participant-status`);
+            statusIcons.forEach(statusDiv => {
+                const parentItem = statusDiv.closest('.participant-item');
+                const participantName = parentItem.querySelector('.participant-name').textContent;
+                
+                if (participantName.includes(speaker)) {
+                    const volumeIcon = statusDiv.querySelector('.status-icon:first-child');
+                    volumeIcon.src = volume > 0 ? './assets/volume-on.svg' : './assets/volume-off.svg';
+                }
+            });
         }
     });
 });

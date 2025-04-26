@@ -216,3 +216,95 @@ const stopScreenShare = async () => {
 }
 
 // subtitle button
+
+
+// reaction button
+// Dynamically create reaction elements while preserving HTML structure
+document.addEventListener('DOMContentLoaded', function() {
+    // Create the reactions wrapper and add it to the body
+    const reactionsWrapper = document.createElement('div');
+    reactionsWrapper.className = 'reactions-wrapper';
+    reactionsWrapper.id = 'reactions-wrapper';
+    document.body.appendChild(reactionsWrapper);
+    
+    // Create the reaction buttons container
+    const reactionButtons = document.createElement('div');
+    reactionButtons.className = 'reaction-buttons';
+    reactionButtons.id = 'reaction-buttons';
+    reactionsWrapper.appendChild(reactionButtons);
+    
+    // Define emoji reactions
+    const emojis = ['👍', '👏', '❤️', '🎉', '😂', '🙌'];
+    
+    // Create buttons for each emoji
+    emojis.forEach(emoji => {
+        const button = document.createElement('button');
+        button.className = 'reaction-btn';
+        button.dataset.emoji = emoji;
+        button.textContent = emoji;
+        reactionButtons.appendChild(button);
+    });
+    
+    // Create emoji container for animations
+    const emojiContainer = document.createElement('div');
+    emojiContainer.className = 'emoji-container';
+    document.body.appendChild(emojiContainer);
+    
+    // Reaction button click handler - toggle reaction panel
+    document.getElementById('reaction-btn').addEventListener('click', function() {
+        const reactionPanel = document.getElementById('reaction-buttons');
+        
+        if (reactionPanel.style.display === 'flex') {
+            reactionPanel.style.display = 'none';
+        } else {
+            reactionPanel.style.display = 'flex';
+        }
+    });
+    
+    // Add click events to all reaction buttons
+    document.querySelectorAll('.reaction-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const emoji = this.dataset.emoji;
+            
+            // Create multiple emoji elements for a burst effect
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    createFloatingEmoji(emoji, emojiContainer);
+                }, i * 150); // Stagger the creation
+            }
+            
+            // Hide the reaction panel after selection
+            document.getElementById('reaction-buttons').style.display = 'none';
+        });
+    });
+    
+    // Add click event to document to close reaction panel when clicking elsewhere
+    document.addEventListener('click', function(event) {
+        const reactionsWrapper = document.getElementById('reactions-wrapper');
+        const reactionBtn = document.getElementById('reaction-btn');
+        
+        if (!reactionsWrapper.contains(event.target) && event.target !== reactionBtn && !reactionBtn.contains(event.target)) {
+            document.getElementById('reaction-buttons').style.display = 'none';
+        }
+    });
+});
+
+// Function to create and animate a floating emoji
+function createFloatingEmoji(emoji, container) {
+    // Create emoji element
+    const emojiElement = document.createElement('div');
+    emojiElement.classList.add('emoji');
+    emojiElement.textContent = emoji;
+    
+    // Random horizontal position
+    const randomX = Math.random() * 80 + 10; // 10% to 90% of the width
+    emojiElement.style.left = `${randomX}%`;
+    
+    // Add to container
+    container.appendChild(emojiElement);
+    
+    // Remove the emoji after animation completes
+    setTimeout(() => {
+        emojiElement.remove();
+    }, 2000); // Remove after 2 seconds (matches animation duration)
+}

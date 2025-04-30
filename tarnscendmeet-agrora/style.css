@@ -120,3 +120,259 @@ main {
         margin: 0 auto;
     }
 }
+
+/* reaction button */
+.reactions-wrapper {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+}
+
+.reaction-buttons {
+    display: none;
+    background-color: #1f1f1f8e;
+    border-radius: 10px;
+    padding: 10px;
+    gap: 10px;
+}
+
+.reaction-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.reaction-btn:hover {
+    transform: scale(1.2);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Emoji animation container */
+.emoji-container {
+    position: fixed;
+    bottom: 150px;
+    left: 0;
+    width: 100%;
+    height: 80%;
+    pointer-events: none;
+    z-index: 999;
+}
+
+/* Emoji animation styling */
+.emoji {
+    position: absolute;
+    font-size: 36px;
+    opacity: 0;
+    bottom: 0;
+    animation: floatUp 2s ease-out forwards;
+    user-select: none;
+}
+
+@keyframes floatUp {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.5);
+    }
+    10% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-300px) scale(1.5);
+    }
+}
+
+/* recording button */
+
+/* Recording indicator */
+.recording-active {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+}
+
+.recording-dot {
+    width: 12px;
+    height: 12px;
+    background-color: red;
+    border-radius: 50%;
+    animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+
+/* Active button state */
+.control-icon-active {
+    background-color: rgb(255, 80, 80, 0.7) !important;
+}
+
+/* Download notification */
+.download-notification {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    display: none;
+    z-index: 1000;
+    text-align: center;
+}
+
+.download-btn {
+    margin-top: 10px;
+    background-color: #006653;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+}
+
+.download-btn:hover {
+    background-color: #00866d;
+}
+
+/* Processing indicator */
+.processing-indicator {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #f0f0f0;
+}
+
+/* paricipant button */
+
+/* Participants Panel Styles */
+.participants-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100vh;
+    background-color: rgba(31, 31, 31, 0.9);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 2000;
+    overflow-y: auto;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.participants-panel.show {
+    transform: translateX(0);
+}
+
+.participants-header {
+    padding: 15px;
+    background-color: #006653;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.participants-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.close-participants {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.participants-list {
+    padding: 10px 0;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.participant-info {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+}
+
+.participant-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: #006653;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-right: 10px;
+    color: white;
+    font-weight: bold;
+}
+
+.participant-name {
+    font-size: 14px;
+    color: white;
+}
+
+.participant-status {
+    display: flex;
+    gap: 10px;
+}
+
+.status-icon {
+    width: 20px;
+    height: 20px;
+    opacity: 0.7;
+}
+
+.local-user {
+    background-color: rgba(0, 102, 83, 0.3);
+}
+
+/* Make sure the icon is highlighted when the panel is open */
+.control-icon-active {
+    background-color: rgb(0, 200, 255, 0.6) !important;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+    .participants-panel {
+        width: 100%;
+    }
+}

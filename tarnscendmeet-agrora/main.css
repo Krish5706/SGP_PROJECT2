@@ -1,0 +1,308 @@
+/* ===================== General Styles ===================== */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s ease, color 0.3s ease;
+    background: #fbf9f4; /* Soft Grayish White */
+    color: #333333; /* Dark Charcoal */
+}
+
+.dark-mode {
+    background: #121212;
+    color: white;
+}
+
+/* ===================== Layout ===================== */
+.home-container {
+    display: flex;
+    flex-wrap: wrap; /* Ensures responsiveness */
+}
+
+/* ===================== Sidebar ===================== */
+.sidebar {
+    width: 220px;
+    background: #38A6D9; /* Elegant Deep Blue */
+    color: white;
+    height: 100vh;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+/* Dark Mode Sidebar */
+.dark-mode .sidebar {
+    background: #1E3F66; /* Dark Navy Blue */
+    color: #B3CDE0; /* Soft Pastel Blue */
+}
+
+/* Responsive Sidebar */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+}
+
+/* ===================== Logo ===================== */
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ===================== Navigation ===================== */
+.nav-menu {
+    margin-top: 20px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    color: white;
+    text-decoration: none;
+    transition: background 0.3s;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.2); /* Hover Effect */
+}
+
+/* ===================== Main Content ===================== */
+.main-content {
+    flex-grow: 1;
+    padding: 20px;
+    position: relative;
+}
+
+/* Responsive Main Content */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 15px;
+    }
+}
+
+/* ===================== Top Navigation ===================== */
+.top-nav {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 10px;
+}
+
+/* Responsive Top Navigation */
+@media (max-width: 768px) {
+    .top-nav {
+        justify-content: center;
+    }
+}
+
+/* ===================== Buttons ===================== */
+.mode-toggle, .nav-button, .logout-button {
+    padding: 10px 15px;
+    cursor: pointer;
+    border: none;
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    color: black;
+    border-radius: 20px;
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover and Active Effects */
+.mode-toggle:hover, .nav-button:hover, .logout-button:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+.mode-toggle:active, .nav-button:active, .logout-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark Mode Buttons */
+.dark-mode .mode-toggle, 
+.dark-mode .nav-button, 
+.dark-mode .logout-button {
+    background: #005F99; /* Muted Navy Blue */
+}
+
+.dark-mode .mode-toggle:hover, 
+.dark-mode .nav-button:hover, 
+.dark-mode .logout-button:hover {
+    background: #0088CC; /* Vibrant Sky Blue */
+}
+
+.time-display {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Upcoming Badge */
+.upcoming-badge {
+    background: #38A6D9; /* Elegant Orange */
+    padding: 10px;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+/* Current Time */
+.current-time {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* ===================== Quick Actions ===================== */
+.quick-actions {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 80px;
+    flex-wrap: wrap;
+}
+
+/* Action Cards */
+.action-card {
+    width: 180px;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.action-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Quick Action Colors */
+.orange { background: #00b9d3; } 
+.blue { background:  #57c7db; }
+.purple { background: #90d6e2; }
+.amber { background: #b8e3ea; }
+
+/* Profile Box Styling */
+.profile-box {
+    position: absolute;
+    top: 75px;
+    right: 20px;
+    background: white;
+    padding: 20px;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    width: 200px;
+    z-index: 100;
+}
+
+.dark-mode .profile-box {
+    background: #2c2c2c;
+    color: white;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.profile-box h3 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    color: #2c3e50;
+}
+
+.dark-mode .profile-box h3 {
+    color: #f1f1f1;
+    border-bottom: 1px solid #2196f3;
+}
+
+.profile-detail {
+    margin-bottom: 15px;
+}
+
+.profile-detail p {
+    margin: 8px 0;
+}
+
+.profile-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.profile-btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    background: #2196f3;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.profile-btn:hover {
+    background: #1976d2;
+}
+
+.close-profile {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    background: #e0e0e0;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.close-profile:hover {
+    background: #ccc;
+}
+
+.dark-mode .close-profile {
+    background: #2196f3;
+    color: white;
+}
+
+/* Profile Box Title */
+.profile-box h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+    color:#57c7db;
+}
+
+/* Profile Box Content */
+.profile-box p {
+    font-size: 1rem;
+    margin: 10px;
+}
+
+/* Buttons */
+.profile-box button {
+    top: 0px;
+    width: 100%;
+    padding: 10px 10px;
+    font-size: 1rem;
+    color: white;
+    background: linear-gradient(90deg, #007bff, #0056b3);
+    border: none;
+    border-radius: 25px;
+    text-decoration: none;
+    transition: transform 0.3s, background 0.3s;
+}
+
+/* Responsive Profile Box */
+@media (max-width: 768px) {
+    .profile-box {
+        width: 100%;
+        right: 5%;
+    }
+}
+
+/* ===================== Hide Elements ===================== */
+.hidden {
+    display: none;
+}
+

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transceed Meet</title>
+    <link rel="stylesheet" href="home.css">
+    <script defer>
+        function toggleMenu() {
+            const navLinks = document.getElementById('nav-links');
+            navLinks.classList.toggle('active');
+        }
+    </script>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">Transcend Meet</div>
+                <div class="burger" onclick="toggleMenu()">☰</div>
+                <ul class="nav-links" id="nav-links">
+                    <li><a href="about.html">About</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="login.html" class="btn">Login</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Welcome to Transcend Meet</h1>
+                <p class="hero-description">
+                    A unified solution for video conferencing, chat, and collaboration.
+                </p>
+                <a href="login.html" class="btn-primary">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="features">
+        <div class="container">
+            <h2>Features</h2>
+            <div class="features-grid">
+                <div class="feature">
+                    <h3>Real-Time Translation</h3>
+                    <p>Translate voice in real-time and display it to  for seamless communication.</p>
+                </div>
+                <div class="feature">
+                    <h3>Real-Time Chat</h3>
+                    <p>Message participants instantly during the meeting for better engagement.</p>
+                </div>
+                <div class="feature">
+                    <h3>File Sharing</h3>
+                    <p>Securely share documents, presentations, and images with participants.</p>
+                </div>
+                <div class="feature">
+                    <h3>Screen Sharing</h3>
+                    <p>Collaborate effectively by sharing your screen in real-time.</p>
+                </div>
+                <div class="feature">
+                    <h3>Meeting Scheduler</h3>
+                    <p>Plan and organize your meetings effortlessly with our scheduling tools.</p>
+                </div>
+                <div class="feature">
+                    <h3>Whiteboard</h3>
+                    <p>Collaborate visually with a real-time digital whiteboard for brainstorming and planning.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Transcend Meet. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>

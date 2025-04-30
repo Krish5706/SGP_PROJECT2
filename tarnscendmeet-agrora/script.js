@@ -954,89 +954,107 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ======================================================================================================================================
 
-// subtitle button
 function setupSubtitles() {
-  let subtitleEnabled = false;
-  let selectedLanguage = 'en-US';
-  let subtitleOverlay, languageMenu, recognition;
-  const languages = [
-      { code: 'en-US', name: 'English' },
-      { code: 'es-ES', name: 'Spanish' },
-      { code: 'fr-FR', name: 'French' },
-      { code: 'de-DE', name: 'German' },
-      { code: 'hi-IN', name: 'Hindi' },
-      { code: 'gu-IN', name: 'Gujarati' }
-  ];
-
-  document.addEventListener('DOMContentLoaded', () => {
-      const subtitlesBtn = document.getElementById('subtitles-btn');
-      subtitlesBtn.addEventListener('click', () => {
-          if (!languageMenu) {
-              languageMenu = document.createElement('div');
-              languageMenu.style.cssText = 'position:absolute;bottom:100px;right:80px;background:#333;border-radius:8px;padding:10px;z-index:101;display:flex;flex-direction:column;gap:5px;';
-              languages.forEach(lang => {
-                  const btn = document.createElement('button');
-                  btn.textContent = lang.name;
-                  btn.style.cssText = 'padding:8px 15px;background:#555;color:white;border:none;border-radius:4px;cursor:pointer;text-align:left;font-family:Poppins,sans-serif;';
-                  if (lang.code === selectedLanguage) btn.style.background = '#007bff';
-                  btn.onclick = () => {
-                      selectedLanguage = lang.code;
-                      if (subtitleEnabled) {
-                          recognition.stop();
-                          startRecognition();
-                      } else toggleSubtitles();
-                      Array.from(languageMenu.children).forEach(b => b.style.background = '#555');
-                      btn.style.background = '#007bff';
-                      languageMenu.style.display = 'none';
-                  };
-                  languageMenu.appendChild(btn);
-              });
-              document.body.appendChild(languageMenu);
-          }
-          languageMenu.style.display = (languageMenu.style.display === 'flex') ? 'none' : 'flex';
-      });
-
-      subtitleOverlay = document.createElement('div');
-      subtitleOverlay.id = 'subtitle-overlay';
-      subtitleOverlay.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:120px;max-width:80%;min-width:300px;text-align:center;color:white;background:rgba(0,0,0,0.6);padding:10px 20px;font-family:Poppins,sans-serif;font-size:18px;z-index:100;display:none;border-radius:24px;box-shadow:0 2px 10px rgba(0,0,0,0.3);';
-      document.body.appendChild(subtitleOverlay);
-  });
-
-  function toggleSubtitles() {
-      subtitleEnabled = !subtitleEnabled;
-      subtitleOverlay.style.display = subtitleEnabled ? 'block' : 'none';
-      if (subtitleEnabled) {
-          startRecognition();
-          document.getElementById('subtitles-btn').style.filter = 'invert(50%) sepia(100%) saturate(2000%) hue-rotate(190deg)';
-      } else {
-          recognition?.stop();
-          document.getElementById('subtitles-btn').style.filter = '';
-      }
+    let subtitleEnabled = false;
+    let selectedLanguage = 'en-US';
+    let subtitleOverlay, languageMenu, recognition;
+    const languages = [
+        { code: 'en-US', name: 'English' },
+        { code: 'es-ES', name: 'Spanish' },
+        { code: 'fr-FR', name: 'French' },
+        { code: 'de-DE', name: 'German' },
+        { code: 'hi-IN', name: 'Hindi' },
+        { code: 'gu-IN', name: 'Gujarati' }
+    ];
+  
+    document.addEventListener('DOMContentLoaded', () => {
+        const subtitlesBtn = document.getElementById('subtitles-btn');
+        subtitlesBtn.style.cursor = 'pointer'; // ensure it's clickable
+  
+        subtitlesBtn.addEventListener('click', () => {
+            if (!languageMenu) {
+                languageMenu = document.createElement('div');
+                languageMenu.style.cssText = 'position:absolute;bottom:100px;right:80px;background:#333;border-radius:8px;padding:10px;z-index:101;display:flex;flex-direction:column;gap:5px;';
+                languages.forEach(lang => {
+                    const btn = document.createElement('button');
+                    btn.textContent = lang.name;
+                    btn.style.cssText = 'padding:8px 15px;background:#555;color:white;border:none;border-radius:4px;cursor:pointer;text-align:left;font-family:Poppins,sans-serif;';
+                    if (lang.code === selectedLanguage) btn.style.background = '#007bff';
+                    btn.onclick = () => {
+                        selectedLanguage = lang.code;
+                        if (subtitleEnabled) {
+                            recognition.stop();
+                            startRecognition();
+                        } else {
+                            toggleSubtitles();
+                        }
+                        Array.from(languageMenu.children).forEach(b => b.style.background = '#555');
+                        btn.style.background = '#007bff';
+                        languageMenu.style.display = 'none';
+                    };
+                    languageMenu.appendChild(btn);
+                });
+                document.body.appendChild(languageMenu);
+            }
+  
+            // If subtitles already enabled, clicking the image stops them
+            if (subtitleEnabled) {
+                toggleSubtitles(); // will stop and hide overlay
+                languageMenu.style.display = 'none';
+            } else {
+                // otherwise show the language menu
+                languageMenu.style.display = (languageMenu.style.display === 'flex') ? 'none' : 'flex';
+            }
+        });
+  
+        subtitleOverlay = document.createElement('div');
+        subtitleOverlay.id = 'subtitle-overlay';
+        subtitleOverlay.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);bottom:120px;max-width:80%;min-width:300px;text-align:center;color:white;background:rgba(0,0,0,0.6);padding:10px 20px;font-family:Poppins,sans-serif;font-size:18px;z-index:100;display:none;border-radius:24px;box-shadow:0 2px 10px rgba(0,0,0,0.3);';
+        document.body.appendChild(subtitleOverlay);
+    });
+  
+    function toggleSubtitles() {
+        subtitleEnabled = !subtitleEnabled;
+        subtitleOverlay.style.display = subtitleEnabled ? 'block' : 'none';
+        const subtitlesBtn = document.getElementById('subtitles-btn');
+        if (subtitleEnabled) {
+            startRecognition();
+            subtitlesBtn.style.filter = 'invert(50%) sepia(100%) saturate(2000%) hue-rotate(190deg)';
+        } else {
+            recognition?.stop();
+            subtitlesBtn.style.filter = '';
+            subtitleOverlay.textContent = ''; // clear any lingering text
+        }
+    }
+  
+    function startRecognition() {
+        if (!('webkitSpeechRecognition' in window)) {
+            subtitleOverlay.textContent = 'Speech recognition not supported.';
+            return;
+        }
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = selectedLanguage;
+        recognition.onresult = e => {
+            let finalTranscript = '', interimTranscript = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                const transcript = e.results[i][0].transcript;
+                if (e.results[i].isFinal) finalTranscript += transcript;
+                else interimTranscript += transcript;
+            }
+            subtitleOverlay.textContent = finalTranscript || interimTranscript;
+        };
+        recognition.onerror = e => {
+            subtitleOverlay.textContent = `Error: ${e.error}`;
+        };
+        recognition.onend = () => {
+            if (subtitleEnabled) recognition.start(); // restart if still enabled
+        };
+        recognition.start();
+    }
   }
-
-  function startRecognition() {
-      if (!('webkitSpeechRecognition' in window)) {
-          subtitleOverlay.textContent = 'Speech recognition not supported.';
-          return;
-      }
-      recognition = new webkitSpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = selectedLanguage;
-      recognition.onresult = e => {
-          let finalTranscript = '', interimTranscript = '';
-          for (let i = e.resultIndex; i < e.results.length; i++) {
-              const transcript = e.results[i][0].transcript;
-              if (e.results[i].isFinal) finalTranscript += transcript;
-              else interimTranscript += transcript;
-          }
-          subtitleOverlay.textContent = finalTranscript || interimTranscript;
-      };
-      recognition.onerror = e => subtitleOverlay.textContent = `Error: ${e.error}`;
-      recognition.onend = () => subtitleEnabled && recognition.start();
-      recognition.start();
-  }
-}
-
-// Call the function
-setupSubtitles();
+  
+  // Initialize
+  setupSubtitles();
+  

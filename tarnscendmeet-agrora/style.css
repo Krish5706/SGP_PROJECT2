@@ -53,9 +53,27 @@ main {
 
 #user-streams {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1em;
     height: 100%;
+}
+@media screen and (max-width: 400px) {
+    #user-streams {
+        grid-template-columns: 1fr;
+        gap: 0.5em;
+    }
+}
+@media screen and (max-width: 768px) {
+    #user-streams {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.5em;
+    }
+}
+@media screen and (max-width: 1400px) {
+    #user-streams {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 0.5em;
+    }
 }
 
 .video-player {
@@ -376,3 +394,4 @@ main {
         width: 100%;
     }
 }
+
